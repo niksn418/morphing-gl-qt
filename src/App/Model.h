@@ -62,7 +62,7 @@ private:
 
 	bool visible_ = true;
 
-	std::shared_ptr<QOpenGLShaderProgram> shaderProgram_;
+	const std::shared_ptr<QOpenGLShaderProgram> shaderProgram_;
 	std::vector<std::unique_ptr<QOpenGLTexture>> textures_;
 	std::vector<Mesh> meshes_;
 
@@ -71,4 +71,6 @@ private:
 	std::vector<std::unique_ptr<QOpenGLVertexArrayObject>> vaos_;
 
 	GLint mvpUniform_ = -1;
+	GLint modelUniform_ = -1;
+	GLint normalMatrixUniform_ = -1;
 };

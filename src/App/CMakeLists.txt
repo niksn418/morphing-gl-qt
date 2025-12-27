@@ -4,6 +4,8 @@ set(SRCS
     Window.h
     Camera.cpp
     Camera.h
+    Lighting.cpp
+    Lighting.h
     Model.cpp
     Model.h
 

@@ -9,7 +9,9 @@ Model::Model(std::shared_ptr<QOpenGLShaderProgram> program)
 	: shaderProgram_(program)
 {
 	program->bind();
-	mvpUniform_ = program->uniformLocation("mvp");
+	mvpUniform_ = program->uniformLocation("mvp"); // TODO: check
+	modelUniform_ = program->uniformLocation("model"); // TODO: check
+	normalMatrixUniform_ = program->uniformLocation("normalMatrix"); // TODO: check
 	program->release();
 }
 
@@ -262,8 +264,9 @@ void Model::render(const Camera & camera, const QOpenGLContext & context)
 	const auto & transform = getTransform();
 	const auto mvp = camera.getViewProjectionMatrix() * transform;
 
-	if (mvpUniform_ >= 0)
-		shaderProgram_->setUniformValue(mvpUniform_, mvp);
+	shaderProgram_->setUniformValue(mvpUniform_, mvp);
+	shaderProgram_->setUniformValue(modelUniform_, transform);
+	shaderProgram_->setUniformValue(normalMatrixUniform_, transform.normalMatrix());
 
 	for (size_t i = 0; i < meshes_.size(); ++i)
 	{

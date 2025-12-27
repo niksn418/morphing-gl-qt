@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "Lighting.h"
 #include "Model.h"
 #include <Base/GLWidget.hpp>
 
@@ -56,6 +57,7 @@ signals:
 private:
 	std::shared_ptr<QOpenGLShaderProgram> program_;
 	std::unique_ptr<Camera> camera_;
+	std::unique_ptr<Lighting> lighting_;
 	std::unique_ptr<Model> model_;
 
 	bool firstMouse_{true};

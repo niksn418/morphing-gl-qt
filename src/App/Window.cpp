@@ -43,13 +43,20 @@ Window::~Window()
 		// Free resources with context bounded.
 		const auto guard = bindContext();
 		model_.reset();
-		program_.reset();
+		lighting_.reset();
 		camera_.reset();
+		program_.reset();
 	}
 }
 
 void Window::onInit()
 {
+	// Configure shaders
+	program_ = std::make_unique<QOpenGLShaderProgram>(this);
+	program_->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/diffuse.vs");
+	program_->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/diffuse.fs");
+	program_->link();
+
 	camera_ = std::make_unique<Camera>();
 	camera_->setPosition(QVector3D(0.0f, 2.0f, 0.0f));
 	camera_->setYaw(0.0f);
@@ -57,15 +64,10 @@ void Window::onInit()
 	camera_->setMoveSpeed(25.0f);
 	camera_->setMouseSensitivity(0.1f);
 
-	// Configure shaders
-	program_ = std::make_unique<QOpenGLShaderProgram>(this);
-	program_->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/diffuse.vs");
-	program_->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/diffuse.fs");
-	program_->link();
+	lighting_ = std::make_unique<Lighting>(program_);
 
 	model_ = std::make_unique<Model>(program_);
 	model_->loadFromGLTF(":/Models/sponza.glb");
-
 	model_->setScale(QVector3D(0.01f, 0.01f, 0.01f));
 	model_->setPosition(QVector3D(0.0f, 0.0f, 0.0f));
 
@@ -87,6 +89,7 @@ void Window::onRender()
 	const auto& camera = *camera_;
 	const auto& glContext = *context();
 	model_->render(camera, glContext);
+	lighting_->render(camera);
 
 	++frameCount_;
 
