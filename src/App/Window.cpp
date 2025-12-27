@@ -1,14 +1,56 @@
 #include "Window.h"
 #include "debug.h"
 
+#include <QFormLayout>
 #include <QMouseEvent>
 #include <QLabel>
 #include <QOpenGLShaderProgram>
 #include <QVBoxLayout>
 #include <QScreen>
+#include <QSlider>
 
 #include <cmath>
 
+template <typename Func1, typename Func2>
+QLayout * Window::createSlider(int min, int max, int defaultValue, Func1 slot, Func2 valueFormat)
+{
+	auto layout = new QHBoxLayout();
+	auto slider = new QSlider(Qt::Horizontal);
+	slider->setRange(min, max);
+	slider->setValue(defaultValue);
+	auto valueLabel = new QLabel(valueFormat(defaultValue));
+	layout->addWidget(slider);
+	layout->addWidget(valueLabel);
+
+	connect(
+		slider, &QSlider::valueChanged, this,
+		[=, slot = std::move(slot)](int value) {
+			slot(value);
+			valueLabel->setText(valueFormat(value));
+		}
+	);
+	return layout;
+}
+
+template <typename Func>
+QLayout * Window::createIntSlider(int min, int max, int defaultValue, Func slot)
+{
+	return createSlider(
+		min, max, defaultValue, std::move(slot),
+		[](int value) { return QString::number(value); }
+	);
+}
+
+template <typename Func>
+QLayout * Window::createFloatSlider(float min, float max, float defaultValue, float step, Func slot)
+{
+	return createSlider(
+		static_cast<int>(min / step), static_cast<int>(max / step),
+		static_cast<int>(defaultValue / step),
+		[slot = std::move(slot), step](int value) { slot(value * step); },
+		[step](int value) { return QString::number(value * step); }
+	);
+}
 Window::Window() noexcept
 {
 	settingsUi_ = std::make_unique<QGroupBox>("Settings", this);
@@ -22,6 +64,12 @@ Window::Window() noexcept
 	);
 	settingsUi_->setContentsMargins(0, 0, 0, 0);
 	settingsUi_->setVisible(settingsOpen_);
+	auto settingsLayout = new QFormLayout();
+	settingsLayout->addRow("Morphing:", createSlider(
+		0, 100, 0, [this](int value) { model_->setMorphing(value / 100.f); },
+		[](int value) { return QString::number(value) + '%'; }
+	));
+	settingsUi_->setLayout(settingsLayout);
 
 	const auto formatFPS = [](const auto value) {
 		return QString("FPS: %1").arg(QString::number(value));

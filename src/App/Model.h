@@ -37,6 +37,7 @@ public:
 	void setPosition(const QVector3D & position);
 	void setRotation(const QVector3D & rotation);
 	void setScale(const QVector3D & scale);
+	void setMorphing(float morphing);
 
 	const QVector3D & getPosition() const { return position_; }
 	const QVector3D & getRotation() const { return rotation_; }
@@ -56,6 +57,7 @@ private:
 	QVector3D position_{0.0f, 0.0f, 0.0f};
 	QVector3D rotation_{0.0f, 0.0f, 0.0f};
 	QVector3D scale_{1.0f, 1.0f, 1.0f};
+	float morphing_ = 0.f;
 
 	mutable QMatrix4x4 transform_;
 	mutable bool transformDirty_ = true;
@@ -65,6 +67,10 @@ private:
 	const std::shared_ptr<QOpenGLShaderProgram> shaderProgram_;
 	std::vector<std::unique_ptr<QOpenGLTexture>> textures_;
 	std::vector<Mesh> meshes_;
+	struct {
+		QVector3D min;
+		QVector3D max;
+	} bounding_box;
 
 	std::vector<std::unique_ptr<QOpenGLBuffer>> vbos_;
 	std::vector<std::unique_ptr<QOpenGLBuffer>> ibos_;
@@ -73,4 +79,7 @@ private:
 	GLint mvpUniform_ = -1;
 	GLint modelUniform_ = -1;
 	GLint normalMatrixUniform_ = -1;
+	GLint bBoxCenterUniform_ = -1;
+	GLint bBoxRadiusUniform_ = -1;
+	GLint morphingUniform_ = -1;
 };

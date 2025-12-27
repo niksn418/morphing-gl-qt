@@ -16,6 +16,12 @@ Model::Model(std::shared_ptr<QOpenGLShaderProgram> program)
 	check(modelUniform_ != -1);
 	normalMatrixUniform_ = program->uniformLocation("normalMatrix");
 	check(normalMatrixUniform_ != -1);
+	bBoxCenterUniform_ = program->uniformLocation("bBoxCenter");
+	check(bBoxCenterUniform_ != -1);
+	bBoxRadiusUniform_ = program->uniformLocation("bBoxRadius");
+	check(bBoxRadiusUniform_ != -1);
+	morphingUniform_ = program->uniformLocation("morphing");
+	check(morphingUniform_ != -1);
 	program->release();
 }
 
@@ -188,8 +194,18 @@ bool Model::loadFromGLTF(const QString & filePath)
 
 void Model::setupMeshBuffers()
 {
+	bounding_box.min = QVector3D(INFINITY, INFINITY, INFINITY);
+	bounding_box.max = QVector3D(-INFINITY, -INFINITY, -INFINITY);
 	for (const auto & mesh: meshes_)
 	{
+		for (const auto & vertex: mesh.vertices)
+		{
+			for (int i = 0; i < 3; ++i)
+			{
+				bounding_box.min[i] = qMin(bounding_box.min[i], vertex.position[i]);
+				bounding_box.max[i] = qMax(bounding_box.max[i], vertex.position[i]);
+			}
+		}
 		auto vao = std::make_unique<QOpenGLVertexArrayObject>();
 		vao->create();
 		vao->bind();
@@ -244,6 +260,11 @@ void Model::setScale(const QVector3D & scale)
 	markTransformDirty();
 }
 
+void Model::setMorphing(float morphing)
+{
+	morphing_ = morphing;
+}
+
 const QMatrix4x4 & Model::getTransform() const
 {
 	if (transformDirty_)
@@ -277,6 +298,9 @@ void Model::render(const Camera & camera, const QOpenGLContext & context)
 	shaderProgram_->setUniformValue(mvpUniform_, mvp);
 	shaderProgram_->setUniformValue(modelUniform_, transform);
 	shaderProgram_->setUniformValue(normalMatrixUniform_, transform.normalMatrix());
+	shaderProgram_->setUniformValue(bBoxCenterUniform_, (bounding_box.max + bounding_box.min) / 2);
+	shaderProgram_->setUniformValue(bBoxRadiusUniform_, (bounding_box.max - bounding_box.min).length() / 2);
+	shaderProgram_->setUniformValue(morphingUniform_, morphing_);
 
 	for (size_t i = 0; i < meshes_.size(); ++i)
 	{

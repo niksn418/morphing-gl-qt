@@ -52,6 +52,13 @@ private:
 	[[nodiscard]] PerfomanceMetricsGuard captureMetrics();
 	void processInput();
 
+	template <typename Func1, typename Func2>
+	QLayout * createSlider(int min, int max, int defaultValue, Func1 slot, Func2 valueFormat);
+	template <typename Func>
+	QLayout * createIntSlider(int min, int max, int defaultValue, Func slot);
+	template <typename Func>
+	QLayout * createFloatSlider(float min, float max, float defaultValue, float step, Func slot);
+
 signals:
 	void updateUI();
 
