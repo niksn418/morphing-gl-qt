@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Camera.h"
 #include <Base/GLWidget.hpp>
 
 #include <QElapsedTimer>
@@ -8,6 +9,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 #include <QOpenGLVertexArrayObject>
+#include <QTimer>
 
 #include <functional>
 #include <memory>
@@ -23,6 +25,12 @@ public: // fgl::GLWidget
 	void onInit() override;
 	void onRender() override;
 	void onResize(size_t width, size_t height) override;
+
+protected:
+	void mousePressEvent(QMouseEvent * event) override;
+	void mouseMoveEvent(QMouseEvent * event) override;
+	void keyPressEvent(QKeyEvent * event) override;
+	void keyReleaseEvent(QKeyEvent * event) override;
 
 private:
 	class PerfomanceMetricsGuard final
@@ -43,6 +51,7 @@ private:
 
 private:
 	[[nodiscard]] PerfomanceMetricsGuard captureMetrics();
+	void processInput();
 
 signals:
 	void updateUI();
@@ -55,11 +64,18 @@ private:
 	QOpenGLVertexArrayObject vao_;
 
 	QMatrix4x4 model_;
-	QMatrix4x4 view_;
-	QMatrix4x4 projection_;
 
+	std::unique_ptr<Camera> camera_;
 	std::unique_ptr<QOpenGLTexture> texture_;
 	std::unique_ptr<QOpenGLShaderProgram> program_;
+
+	bool firstMouse_{true};
+	QPoint lastMousePos_;
+
+	QSet<int> pressedKeys_;
+
+	QTimer * inputTimer_;
+	QElapsedTimer deltaTimer_;
 
 	QElapsedTimer timer_;
 	size_t frameCount_ = 0;

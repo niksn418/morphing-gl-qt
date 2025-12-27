@@ -42,6 +42,14 @@ Window::Window() noexcept
 	setLayout(layout);
 
 	timer_.start();
+	deltaTimer_.start();
+
+	setFocusPolicy(Qt::StrongFocus);
+	setMouseTracking(true);
+
+	inputTimer_ = new QTimer(this);
+	connect(inputTimer_, &QTimer::timeout, this, &Window::processInput);
+	inputTimer_->start(16);
 
 	connect(this, &Window::updateUI, [=, this] {
 		fps->setText(formatFPS(ui_.fps));
@@ -55,11 +63,19 @@ Window::~Window()
 		const auto guard = bindContext();
 		texture_.reset();
 		program_.reset();
+		camera_.reset();
 	}
 }
 
 void Window::onInit()
 {
+	camera_ = std::make_unique<Camera>();
+	camera_->setPosition(QVector3D(0.0f, 2.0f, 0.0f));
+	camera_->setYaw(0.0f);
+	camera_->setPitch(-30.0f);
+	camera_->setMoveSpeed(25.0f);
+	camera_->setMouseSensitivity(0.1f);
+
 	// Configure shaders
 	program_ = std::make_unique<QOpenGLShaderProgram>(this);
 	program_->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/diffuse.vs");
@@ -129,8 +145,7 @@ void Window::onRender()
 	// Calculate MVP matrix
 	model_.setToIdentity();
 	model_.translate(0, 0, -2);
-	view_.setToIdentity();
-	const auto mvp = projection_ * view_ * model_;
+	const auto mvp = camera_->getViewProjectionMatrix() * model_;
 
 	// Bind VAO and shader program
 	program_->bind();
@@ -162,16 +177,69 @@ void Window::onRender()
 
 void Window::onResize(const size_t width, const size_t height)
 {
-	// Configure viewport
 	glViewport(0, 0, static_cast<GLint>(width), static_cast<GLint>(height));
 
-	// Configure matrix
-	const auto aspect = static_cast<float>(width) / static_cast<float>(height);
-	const auto zNear = 0.1f;
-	const auto zFar = 100.0f;
-	const auto fov = 60.0f;
-	projection_.setToIdentity();
-	projection_.perspective(fov, aspect, zNear, zFar);
+	if (camera_)
+	{
+		const auto aspect = static_cast<float>(width) / static_cast<float>(height);
+		const auto zNear = 0.1f;
+		const auto zFar = 100.0f;
+		const auto fov = 60.0f;
+		camera_->setPerspective(fov, aspect, zNear, zFar);
+	}
+}
+
+void Window::processInput()
+{
+	if (!camera_)
+		return;
+
+	float deltaTime = deltaTimer_.restart() / 1000.0f;
+
+	deltaTime = qMin(deltaTime, 0.1f);
+
+	camera_->processKeyboardInput(pressedKeys_, deltaTime);
+}
+
+void Window::mousePressEvent(QMouseEvent * event)
+{
+	if (event->button() == Qt::LeftButton)
+	{
+		lastMousePos_ = event->pos();
+		firstMouse_ = true;
+	}
+}
+
+void Window::mouseMoveEvent(QMouseEvent * event)
+{
+	if (!camera_)
+		return;
+
+	if (event->buttons() & Qt::LeftButton)
+	{
+		if (firstMouse_)
+		{
+			lastMousePos_ = event->pos();
+			firstMouse_ = false;
+		}
+
+		float xOffset = event->pos().x() - lastMousePos_.x();
+		float yOffset = lastMousePos_.y() - event->pos().y();
+
+		lastMousePos_ = event->pos();
+
+		camera_->processMouseMovement(xOffset, yOffset);
+	}
+}
+
+void Window::keyPressEvent(QKeyEvent * event)
+{
+	pressedKeys_.insert(event->key());
+}
+
+void Window::keyReleaseEvent(QKeyEvent * event)
+{
+	pressedKeys_.remove(event->key());
 }
 
 Window::PerfomanceMetricsGuard::PerfomanceMetricsGuard(std::function<void()> callback)
