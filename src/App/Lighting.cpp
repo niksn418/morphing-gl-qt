@@ -1,14 +1,18 @@
 #include "Camera.h"
 #include "Lighting.h"
+#include "debug.h"
 #include <QVector3D>
 
 Lighting::Lighting(std::shared_ptr<QOpenGLShaderProgram> program)
 	: shaderProgram_(program)
 {
 	program->bind();
-	lightPosUniform_ = program->uniformLocation("lightPos"); // TODO: check
-	lightColorUniform_ = program->uniformLocation("lightColor"); // TODO: check
-	viewPosUniform_ = program->uniformLocation("viewPos"); // TODO: check
+	lightPosUniform_ = program->uniformLocation("lightPos");
+	check(lightPosUniform_ != -1);
+	lightColorUniform_ = program->uniformLocation("lightColor");
+	check(lightColorUniform_ != -1);
+	viewPosUniform_ = program->uniformLocation("viewPos");
+	check(viewPosUniform_ != -1);
 	program->release();
 }
 

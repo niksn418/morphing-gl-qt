@@ -1,5 +1,6 @@
 #include "Model.h"
 #include "Camera.h"
+#include "debug.h"
 #include <QFile>
 #include <QImage>
 #include <QOpenGLFunctions>
@@ -9,9 +10,12 @@ Model::Model(std::shared_ptr<QOpenGLShaderProgram> program)
 	: shaderProgram_(program)
 {
 	program->bind();
-	mvpUniform_ = program->uniformLocation("mvp"); // TODO: check
-	modelUniform_ = program->uniformLocation("model"); // TODO: check
-	normalMatrixUniform_ = program->uniformLocation("normalMatrix"); // TODO: check
+	mvpUniform_ = program->uniformLocation("mvp");
+	check(mvpUniform_ != -1);
+	modelUniform_ = program->uniformLocation("model");
+	check(modelUniform_ != -1);
+	normalMatrixUniform_ = program->uniformLocation("normalMatrix");
+	check(normalMatrixUniform_ != -1);
 	program->release();
 }
 
@@ -44,6 +48,12 @@ bool Model::loadFromGLTF(const QString & filePath)
 											   reinterpret_cast<const unsigned char *>(modelData.data()),
 											   static_cast<unsigned int>(modelData.size()));
 
+	if (!warn.empty()) {
+		qDebug() << "MODEL LOADING WARNING: " << warn.c_str() << '\n';
+	}
+	if (!err.empty()) {
+		qDebug() << "MODEL LOADING ERROR: " << err.c_str() << '\n';
+	}
 	if (!success)
 	{
 		return false;

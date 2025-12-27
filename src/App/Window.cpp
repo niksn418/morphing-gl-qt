@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "debug.h"
 
 #include <QMouseEvent>
 #include <QLabel>
@@ -53,9 +54,10 @@ void Window::onInit()
 {
 	// Configure shaders
 	program_ = std::make_unique<QOpenGLShaderProgram>(this);
-	program_->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/diffuse.vs");
-	program_->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/diffuse.fs");
-	program_->link();
+	check(!!program_);
+	check(program_->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/diffuse.vs"));
+	check(program_->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/diffuse.fs"));
+	check(program_->link());
 
 	camera_ = std::make_unique<Camera>();
 	camera_->setPosition(QVector3D(0.0f, 2.0f, 0.0f));
@@ -67,7 +69,7 @@ void Window::onInit()
 	lighting_ = std::make_unique<Lighting>(program_);
 
 	model_ = std::make_unique<Model>(program_);
-	model_->loadFromGLTF(":/Models/sponza.glb");
+	check(model_->loadFromGLTF(":/Models/sponza.glb"));
 	model_->setScale(QVector3D(0.01f, 0.01f, 0.01f));
 	model_->setPosition(QVector3D(0.0f, 0.0f, 0.0f));
 
