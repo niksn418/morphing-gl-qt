@@ -6,6 +6,7 @@
 #include <Base/GLWidget.hpp>
 
 #include <QElapsedTimer>
+#include <QGroupBox>
 #include <QOpenGLShaderProgram>
 #include <QTimer>
 
@@ -76,4 +77,7 @@ private:
 	} ui_;
 
 	bool animated_ = true;
+
+	bool settingsOpen_ = false;
+	std::unique_ptr<QGroupBox> settingsUi_;
 };

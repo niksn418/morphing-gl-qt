@@ -11,6 +11,18 @@
 
 Window::Window() noexcept
 {
+	settingsUi_ = std::make_unique<QGroupBox>("Settings", this);
+	settingsUi_->setAlignment(Qt::AlignHCenter);
+	settingsUi_->setStyleSheet(
+		"QGroupBox {"
+			"background-color: rgba(128, 128, 128, 128);"
+			"font-weight: bold;"
+			"font-size: 20pt;"
+		"}"
+	);
+	settingsUi_->setContentsMargins(0, 0, 0, 0);
+	settingsUi_->setVisible(settingsOpen_);
+
 	const auto formatFPS = [](const auto value) {
 		return QString("FPS: %1").arg(QString::number(value));
 	};
@@ -19,7 +31,8 @@ Window::Window() noexcept
 	fps->setStyleSheet("QLabel { color : white; }");
 
 	auto layout = new QVBoxLayout();
-	layout->addWidget(fps, 1);
+	layout->addWidget(fps);
+	layout->addStretch(1);
 
 	setLayout(layout);
 
@@ -47,6 +60,7 @@ Window::~Window()
 		lighting_.reset();
 		camera_.reset();
 		program_.reset();
+		settingsUi_.reset();
 	}
 }
 
@@ -105,26 +119,22 @@ void Window::onRender()
 void Window::onResize(const size_t width, const size_t height)
 {
 	glViewport(0, 0, static_cast<GLint>(width), static_cast<GLint>(height));
+	settingsUi_->setGeometry(rect());
 
-	if (camera_)
-	{
-		const auto aspect = static_cast<float>(width) / static_cast<float>(height);
-		const auto zNear = 0.1f;
-		const auto zFar = 100.0f;
-		const auto fov = 60.0f;
-		camera_->setPerspective(fov, aspect, zNear, zFar);
-	}
+	const auto aspect = static_cast<float>(width) / static_cast<float>(height);
+	const auto zNear = 0.1f;
+	const auto zFar = 100.0f;
+	const auto fov = 60.0f;
+	camera_->setPerspective(fov, aspect, zNear, zFar);
 }
 
 void Window::processInput()
 {
-	if (!camera_)
-		return;
-
 	float deltaTime = deltaTimer_.restart() / 1000.0f;
 
 	deltaTime = qMin(deltaTime, 0.1f);
 
+	if (settingsOpen_) return;
 	camera_->processKeyboardInput(pressedKeys_, deltaTime);
 }
 
@@ -139,7 +149,7 @@ void Window::mousePressEvent(QMouseEvent * event)
 
 void Window::mouseMoveEvent(QMouseEvent * event)
 {
-	if (!camera_)
+	if (settingsOpen_)
 		return;
 
 	if (event->buttons() & Qt::LeftButton)
@@ -161,6 +171,10 @@ void Window::mouseMoveEvent(QMouseEvent * event)
 
 void Window::keyPressEvent(QKeyEvent * event)
 {
+	if (event->key() == Qt::Key_Escape) {
+		settingsOpen_ ^= true;
+		settingsUi_->setVisible(settingsOpen_);
+	}
 	pressedKeys_.insert(event->key());
 }
 
