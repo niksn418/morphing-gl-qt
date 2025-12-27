@@ -20,3 +20,7 @@ target_link_libraries(demo-app
         FGL::Base
         thirdparty::tinygltf
 )
+
+add_custom_target(run
+    COMMAND demo-app
+)

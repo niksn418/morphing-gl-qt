@@ -43,7 +43,7 @@ Window::Window() noexcept
 
 	timer_.start();
 
-	connect(this, &Window::updateUI, [=] {
+	connect(this, &Window::updateUI, [=, this] {
 		fps->setText(formatFPS(ui_.fps));
 	});
 }
