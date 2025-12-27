@@ -4,17 +4,18 @@ set(SRCS
     Window.h
     Camera.cpp
     Camera.h
+    Model.cpp
+    Model.h
 
     Shaders/diffuse.fs
     Shaders/diffuse.vs
-    Textures/voronoi.png
-
-    resources.qrc
 )
 
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
-add_executable(demo-app ${SRCS})
+qt_add_big_resources(RES resources.qrc)
+
+add_executable(demo-app ${SRCS} ${RES})
 
 target_link_libraries(demo-app
     PRIVATE

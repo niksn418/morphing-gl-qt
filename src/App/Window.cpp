@@ -2,30 +2,11 @@
 
 #include <QMouseEvent>
 #include <QLabel>
-#include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
 #include <QVBoxLayout>
 #include <QScreen>
 
-#include <array>
-
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-
-#include <tinygltf/tiny_gltf.h>
-
-namespace
-{
-
-constexpr std::array<GLfloat, 21u> vertices = {
-	0.0f, 0.707f, 1.f, 0.f, 0.f, 0.0f, 0.0f,
-	-0.5f, -0.5f, 0.f, 1.f, 0.f, 0.5f, 1.0f,
-	0.5f, -0.5f, 0.f, 0.f, 1.f, 1.0f, 0.0f,
-};
-constexpr std::array<GLuint, 3u> indices = {0, 1, 2};
-
-}// namespace
+#include <cmath>
 
 Window::Window() noexcept
 {
@@ -61,7 +42,7 @@ Window::~Window()
 	{
 		// Free resources with context bounded.
 		const auto guard = bindContext();
-		texture_.reset();
+		model_.reset();
 		program_.reset();
 		camera_.reset();
 	}
@@ -79,53 +60,14 @@ void Window::onInit()
 	// Configure shaders
 	program_ = std::make_unique<QOpenGLShaderProgram>(this);
 	program_->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/diffuse.vs");
-	program_->addShaderFromSourceFile(QOpenGLShader::Fragment,
-									  ":/Shaders/diffuse.fs");
+	program_->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/diffuse.fs");
 	program_->link();
 
-	// Create VAO object
-	vao_.create();
-	vao_.bind();
+	model_ = std::make_unique<Model>(program_);
+	model_->loadFromGLTF(":/Models/sponza.glb");
 
-	// Create VBO
-	vbo_.create();
-	vbo_.bind();
-	vbo_.setUsagePattern(QOpenGLBuffer::StaticDraw);
-	vbo_.allocate(vertices.data(), static_cast<int>(vertices.size() * sizeof(GLfloat)));
-
-	// Create IBO
-	ibo_.create();
-	ibo_.bind();
-	ibo_.setUsagePattern(QOpenGLBuffer::StaticDraw);
-	ibo_.allocate(indices.data(), static_cast<int>(indices.size() * sizeof(GLuint)));
-
-	texture_ = std::make_unique<QOpenGLTexture>(QImage(":/Textures/voronoi.png"));
-	texture_->setMinMagFilters(QOpenGLTexture::Linear, QOpenGLTexture::Linear);
-	texture_->setWrapMode(QOpenGLTexture::WrapMode::Repeat);
-
-	// Bind attributes
-	program_->bind();
-
-	program_->enableAttributeArray(0);
-	program_->setAttributeBuffer(0, GL_FLOAT, 0, 2, static_cast<int>(7 * sizeof(GLfloat)));
-
-	program_->enableAttributeArray(1);
-	program_->setAttributeBuffer(1, GL_FLOAT, static_cast<int>(2 * sizeof(GLfloat)), 3,
-								 static_cast<int>(7 * sizeof(GLfloat)));
-
-	program_->enableAttributeArray(2);
-	program_->setAttributeBuffer(2, GL_FLOAT, static_cast<int>(5 * sizeof(GLfloat)), 2,
-								 static_cast<int>(7 * sizeof(GLfloat)));
-
-	mvpUniform_ = program_->uniformLocation("mvp");
-
-	// Release all
-	program_->release();
-
-	vao_.release();
-
-	ibo_.release();
-	vbo_.release();
+	model_->setScale(QVector3D(0.01f, 0.01f, 0.01f));
+	model_->setPosition(QVector3D(0.0f, 0.0f, 0.0f));
 
 	// Еnable depth test and face culling
 	glEnable(GL_DEPTH_TEST);
@@ -142,29 +84,9 @@ void Window::onRender()
 	// Clear buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Calculate MVP matrix
-	model_.setToIdentity();
-	model_.translate(0, 0, -2);
-	const auto mvp = camera_->getViewProjectionMatrix() * model_;
-
-	// Bind VAO and shader program
-	program_->bind();
-	vao_.bind();
-
-	// Update uniform value
-	program_->setUniformValue(mvpUniform_, mvp);
-
-	// Activate texture unit and bind texture
-	glActiveTexture(GL_TEXTURE0);
-	texture_->bind();
-
-	// Draw
-	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
-
-	// Release VAO and shader program
-	texture_->release();
-	vao_.release();
-	program_->release();
+	const auto& camera = *camera_;
+	const auto& glContext = *context();
+	model_->render(camera, glContext);
 
 	++frameCount_;
 

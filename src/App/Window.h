@@ -1,14 +1,11 @@
 #pragma once
 
 #include "Camera.h"
+#include "Model.h"
 #include <Base/GLWidget.hpp>
 
 #include <QElapsedTimer>
-#include <QMatrix4x4>
-#include <QOpenGLBuffer>
 #include <QOpenGLShaderProgram>
-#include <QOpenGLTexture>
-#include <QOpenGLVertexArrayObject>
 #include <QTimer>
 
 #include <functional>
@@ -57,17 +54,9 @@ signals:
 	void updateUI();
 
 private:
-	GLint mvpUniform_ = -1;
-
-	QOpenGLBuffer vbo_{QOpenGLBuffer::Type::VertexBuffer};
-	QOpenGLBuffer ibo_{QOpenGLBuffer::Type::IndexBuffer};
-	QOpenGLVertexArrayObject vao_;
-
-	QMatrix4x4 model_;
-
+	std::shared_ptr<QOpenGLShaderProgram> program_;
 	std::unique_ptr<Camera> camera_;
-	std::unique_ptr<QOpenGLTexture> texture_;
-	std::unique_ptr<QOpenGLShaderProgram> program_;
+	std::unique_ptr<Model> model_;
 
 	bool firstMouse_{true};
 	QPoint lastMousePos_;
