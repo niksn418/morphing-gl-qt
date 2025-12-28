@@ -124,10 +124,6 @@ Window::Window() noexcept
 	setFocusPolicy(Qt::StrongFocus);
 	setMouseTracking(true);
 
-	inputTimer_ = new QTimer(this);
-	connect(inputTimer_, &QTimer::timeout, this, &Window::processInput);
-	inputTimer_->start(16);
-
 	connect(this, &Window::updateUI, [=, this] {
 		fps->setText(formatFPS(ui_.fps));
 	});
@@ -185,10 +181,11 @@ void Window::reloadModel()
 void Window::onRender()
 {
 	const auto guard = captureMetrics();
+	processInput();
 
 	// Clear buffers
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.2, 0.2, 0.2, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (modelIndexChanged_) {
 		modelIndexChanged_ = false;
@@ -197,8 +194,8 @@ void Window::onRender()
 
 	const auto& camera = *camera_;
 	const auto& glContext = *context();
-	model_->render(camera, glContext);
 	lighting_->render(camera);
+	model_->render(camera, glContext);
 
 	++frameCount_;
 

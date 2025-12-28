@@ -8,7 +8,6 @@
 #include <QElapsedTimer>
 #include <QGroupBox>
 #include <QOpenGLShaderProgram>
-#include <QTimer>
 
 #include <functional>
 #include <memory>
@@ -76,8 +75,6 @@ private:
 	bool modelIndexChanged_ = false;
 
 	QSet<int> pressedKeys_;
-
-	QTimer * inputTimer_;
 	QElapsedTimer deltaTimer_;
 
 	QElapsedTimer timer_;
