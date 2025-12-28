@@ -20,9 +20,9 @@ find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 qt_add_big_resources(RES resources.qrc)
 
-add_executable(demo-app ${SRCS} ${RES})
+add_executable(morphing ${SRCS} ${RES})
 
-target_link_libraries(demo-app
+target_link_libraries(morphing
     PRIVATE
         Qt5::Widgets
         FGL::Base
@@ -30,5 +30,5 @@ target_link_libraries(demo-app
 )
 
 add_custom_target(run
-    COMMAND demo-app
+    COMMAND morphing
 )
