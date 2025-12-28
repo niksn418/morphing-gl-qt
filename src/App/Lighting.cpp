@@ -26,7 +26,7 @@ Lights Lighting::defaultLights() {
 		},
 		.spotLight{
 			.bulb{
-				.position{},
+				.position{2.f, 2.f, 2.f},
 				.light{
 					.color{1.f, 1.f, 1.f},
 					.ambientStrength = 0.f,
@@ -36,7 +36,7 @@ Lights Lighting::defaultLights() {
 				.linear = .09f,
 				.quadratic = .032f
 			},
-			.direction{},
+			.direction{-2.f, -2.f, -2.f},
 			.cutOff{std::cos(degreesToRadians(12.5f))},
 			.outerCutOff{std::cos(degreesToRadians(15.f))},
 		}
@@ -55,8 +55,6 @@ Lighting::Lighting(std::shared_ptr<QOpenGLShaderProgram> program)
 void Lighting::render(const Camera & camera)
 {
 	shaderProgram_->bind();
-	lights_.spotLight.bulb.position = camera.getPosition();
-	lights_.spotLight.direction = camera.getFront();
 	setUniformValue(shaderProgram_, lightsUniform_, lights_);
 	setUniformValue(shaderProgram_, viewPosUniform_, camera.getPosition());
 	shaderProgram_->release();

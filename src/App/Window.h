@@ -52,6 +52,8 @@ private:
 	void processInput();
 
 	void reloadModel();
+	void switchLightCamera();
+	void syncLightCamera();
 
 	template <typename Func1, typename Func2>
 	QLayout * createSlider(int min, int max, int defaultValue, Func1 slot, Func2 valueFormat);
@@ -60,6 +62,8 @@ private:
 	template <typename Func>
 	QLayout * createFloatSlider(float min, float max, float defaultValue, float step, Func slot);
 	std::unique_ptr<QGroupBox> initSettingsUi();
+	QGroupBox * initModelSettingsUi();
+	QGroupBox * initLightingSettingsUi();
 
 signals:
 	void updateUI();
@@ -69,11 +73,13 @@ private:
 	std::unique_ptr<Camera> camera_;
 	std::unique_ptr<Lighting> lighting_;
 	std::unique_ptr<Model> model_;
+	std::unique_ptr<Camera> cameraBackup_{};
 
 	bool firstMouse_{true};
 	QPoint lastMousePos_;
 	unsigned int modelIndex_ = 1;
 	bool modelIndexChanged_ = false;
+	unsigned int cameraId_;
 
 	QSet<int> pressedKeys_;
 	QElapsedTimer deltaTimer_;

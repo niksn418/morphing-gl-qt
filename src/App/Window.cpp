@@ -1,12 +1,14 @@
 #include "Window.h"
 #include "utils.h"
 
+#include <QButtonGroup>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QMouseEvent>
 #include <QLabel>
 #include <QOpenGLShaderProgram>
+#include <QRadioButton>
 #include <QVBoxLayout>
 #include <QScreen>
 #include <QSlider>
@@ -25,6 +27,13 @@ namespace
 		model_variant{"Duck", 0.01f},
 		model_variant{"WaterBottle", 5.f, {0.f, 1.f, 0.f}},
 		model_variant{"ScatteringSkull", 5.f},
+	};
+
+	enum cameras {
+		DIRECTIONAL_LIGHT,
+		POINT_LIGHT,
+		SPOTLIGHT,
+		DEFAULT,
 	};
 }// namespace
 
@@ -69,6 +78,71 @@ QLayout * Window::createFloatSlider(float min, float max, float defaultValue, fl
 	);
 }
 
+QGroupBox * Window::initModelSettingsUi()
+{
+	auto modelSettings = new QGroupBox("Model Settings:");
+	auto modelSettingsLayout = new QFormLayout();
+
+	modelSettingsLayout->addRow("Morphing:", createSlider(
+		0, 100, 0, [this](int value) { model_->setMorphing(value / 100.f); },
+		[](int value) { return QString::number(value) + '%'; }
+	));
+
+	auto modelVariants = new QComboBox();
+	for (const auto & model: MODEL_VARIANTS)
+		modelVariants->addItem(model.name);
+	modelVariants->setCurrentIndex(modelIndex_);
+	connect(modelVariants, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
+		modelIndex_ = index;
+		modelIndexChanged_ = true;
+	});
+	modelSettingsLayout->addRow("Model Name:", modelVariants);
+
+	auto modelUseTexture = new QCheckBox();
+	modelUseTexture->setTristate(false);
+	modelUseTexture->setCheckState(Qt::Checked);
+	connect(modelUseTexture, &QCheckBox::stateChanged, this, [this](int state) {
+		model_->useTexture(state == Qt::Checked);
+	});
+	modelSettingsLayout->addRow("Use Model's Texture:", modelUseTexture);
+
+	modelSettings->setLayout(modelSettingsLayout);
+	modelSettings->setStyleSheet("font-size: 14pt;");
+	modelSettings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+	modelSettings->setFixedHeight(modelSettings->sizeHint().height());
+	return modelSettings;
+}
+
+QGroupBox * Window::initLightingSettingsUi()
+{
+	auto lightSettings = new QGroupBox("Lighting Settings:");
+	auto lightSettingsLayout = new QGridLayout();
+
+	auto cameraOption = new QGroupBox("Move Light");
+	auto buttons = new QButtonGroup();
+	buttons->addButton(new QRadioButton("None"), DEFAULT);
+	buttons->addButton(new QRadioButton("Directional"), DIRECTIONAL_LIGHT);
+	buttons->addButton(new QRadioButton("Point"), POINT_LIGHT);
+	buttons->addButton(new QRadioButton("Spotlight"), SPOTLIGHT);
+	buttons->button(DEFAULT)->setChecked(true);
+	auto cameraOptionLayout = new QVBoxLayout();
+	for (auto button: buttons->buttons())
+		cameraOptionLayout->addWidget(button);
+	connect(buttons, &QButtonGroup::idToggled, this, [this](int id, bool enabled) {
+		if (!enabled) return;
+		cameraId_ = id;
+		switchLightCamera();
+	});
+	cameraOption->setLayout(cameraOptionLayout);
+	lightSettingsLayout->addWidget(cameraOption, 0, 0);
+
+	lightSettings->setLayout(lightSettingsLayout);
+	lightSettings->setStyleSheet("font-size: 14pt;");
+	lightSettings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+	lightSettings->setFixedHeight(lightSettings->sizeHint().height());
+	return lightSettings;
+}
+
 std::unique_ptr<QGroupBox> Window::initSettingsUi()
 {
 	auto settingsUi = std::make_unique<QGroupBox>("Settings", this);
@@ -83,42 +157,16 @@ std::unique_ptr<QGroupBox> Window::initSettingsUi()
 	settingsUi->setContentsMargins(0, 0, 0, 0);
 	settingsUi->setVisible(settingsOpen_);
 
-	auto modelSettings = new QGroupBox("Model Settings:");
-	auto modelSettingsLayout = new QFormLayout();
-	modelSettingsLayout->addRow("Morphing:", createSlider(
-		0, 100, 0, [this](int value) { model_->setMorphing(value / 100.f); },
-		[](int value) { return QString::number(value) + '%'; }
-	));
-	auto modelVariants = new QComboBox();
-	for (const auto & model: MODEL_VARIANTS)
-		modelVariants->addItem(model.name);
-	modelVariants->setCurrentIndex(modelIndex_);
-	connect(modelVariants, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
-		modelIndex_ = index;
-		modelIndexChanged_ = true;
-	});
-	modelSettingsLayout->addRow("Model Name:", modelVariants);
-	auto modelUseTexture = new QCheckBox();
-	modelUseTexture->setTristate(false);
-	modelUseTexture->setCheckState(Qt::Checked);
-	connect(modelUseTexture, &QCheckBox::stateChanged, this, [this](int state) {
-		model_->useTexture(state == Qt::Checked);
-	});
-	modelSettingsLayout->addRow("Use Model's Texture:", modelUseTexture);
-	modelSettings->setLayout(modelSettingsLayout);
-	modelSettings->setStyleSheet("font-size: 14pt;");
-	modelSettings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-	modelSettings->setFixedHeight(modelSettings->sizeHint().height());
-
 	auto settingsLayout = new QVBoxLayout();
-	settingsLayout->addWidget(modelSettings);
+	settingsLayout->addWidget(initModelSettingsUi());
+	settingsLayout->addWidget(initLightingSettingsUi());
 	settingsLayout->addStretch();
 	settingsUi->setLayout(settingsLayout);
 	return settingsUi;
 }
 
 Window::Window() noexcept
-	: settingsUi_(initSettingsUi())
+	: cameraId_(DEFAULT), settingsUi_(initSettingsUi())
 {
 	const auto formatFPS = [](const auto value) {
 		return QString("FPS: %1").arg(QString::number(value));
@@ -193,10 +241,58 @@ void Window::reloadModel()
 	model_->setPosition(MODEL_VARIANTS[modelIndex_].position);
 }
 
+void Window::switchLightCamera()
+{
+	if (cameraId_ == DEFAULT)
+	{
+		camera_ = std::move(cameraBackup_);
+		return;
+	}
+	if (!cameraBackup_) {
+		cameraBackup_ = std::move(camera_);
+		camera_ = std::make_unique<Camera>(*cameraBackup_);
+	}
+	switch (cameraId_)
+	{
+	case DIRECTIONAL_LIGHT:
+		camera_->setTarget(lighting_->lights_.dirLight.direction + camera_->getPosition());
+		break;
+	case POINT_LIGHT:
+		camera_->setPosition(lighting_->lights_.pointLight.position);
+		break;
+	case SPOTLIGHT:
+		camera_->setPosition(lighting_->lights_.spotLight.bulb.position);
+		camera_->setTarget(lighting_->lights_.spotLight.direction + camera_->getPosition());
+		break;
+	default:
+		break;
+	}
+}
+
+void Window::syncLightCamera()
+{
+	switch (cameraId_)
+	{
+	case DIRECTIONAL_LIGHT:
+		lighting_->lights_.dirLight.direction = camera_->getFront();
+		break;
+	case POINT_LIGHT:
+		lighting_->lights_.pointLight.position = camera_->getPosition();
+		break;
+	case SPOTLIGHT:
+		lighting_->lights_.spotLight.bulb.position = camera_->getPosition();
+		lighting_->lights_.spotLight.direction = camera_->getFront();
+		break;
+	default:
+		break;
+	}
+}
+
 void Window::onRender()
 {
 	const auto guard = captureMetrics();
 	processInput();
+	syncLightCamera();
 
 	// Clear buffers
 	glClearColor(0.2, 0.2, 0.2, 1.0);
