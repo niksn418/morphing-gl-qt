@@ -92,6 +92,10 @@ void Camera::processMouseMovement(float xOffset, float yOffset)
 void Camera::processKeyboardInput(const QSet<int> & pressedKeys, float deltaTime)
 {
 	float velocity = moveSpeed_ * deltaTime;
+	if (pressedKeys.contains(Qt::Key_Control))
+	{
+		velocity /= 4;
+	}
 
 	if (pressedKeys.contains(Qt::Key_W))
 	{
