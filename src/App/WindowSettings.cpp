@@ -66,7 +66,7 @@ QGroupBox * Window::initModelSettingsUi()
 	));
 
 	auto modelVariants = new QComboBox();
-	for (const auto & model: window_internals::MODEL_VARIANTS)
+	for (const auto & model: MODEL_VARIANTS)
 		modelVariants->addItem(model.name);
 	modelVariants->setCurrentIndex(modelIndex_);
 	connect(modelVariants, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {

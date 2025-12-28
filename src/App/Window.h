@@ -9,6 +9,7 @@
 #include <QGroupBox>
 #include <QOpenGLShaderProgram>
 
+#include <array>
 #include <functional>
 #include <memory>
 
@@ -19,7 +20,7 @@ namespace window_internals
 		float scale;
 		QVector3D position{0.f, 0.f, 0.f};
 	};
-	inline const std::array MODEL_VARIANTS = {
+	inline const std::array MODEL_VARIANTS{
 		model_variant{"sponza", 0.01f},
 		model_variant{"Duck", 0.01f},
 		model_variant{"WaterBottle", 5.f, {0.f, 1.f, 0.f}},
