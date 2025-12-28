@@ -1,26 +1,63 @@
 #include "Camera.h"
 #include "Lighting.h"
-#include "debug.h"
 #include <QVector3D>
+
+Lights Lighting::defaultLights() {
+	return {
+		.dirLight{
+			.direction{1.f, -1.f, 1.f},
+			.light{
+				.color{1.f, 1.f, .5f},
+				.ambientStrength = .05f,
+				.diffuseStrength = .4f,
+				.specularStrength = .5f
+			}
+		},
+		.pointLight{
+			.position{0.f, 10.f, 0.f},
+			.light{
+				.color{1.f, 1.f, 1.f},
+				.ambientStrength = .05f,
+				.diffuseStrength = .8f,
+				.specularStrength = 1.f
+			},
+			.linear = .35f,
+			.quadratic = .44f
+		},
+		.spotLight{
+			.bulb{
+				.position{},
+				.light{
+					.color{1.f, 1.f, 1.f},
+					.ambientStrength = 0.f,
+					.diffuseStrength = 1.f,
+					.specularStrength = 1.f
+				},
+				.linear = .09f,
+				.quadratic = .032f
+			},
+			.direction{},
+			.cutOff{std::cos(degreesToRadians(12.5f))},
+			.outerCutOff{std::cos(degreesToRadians(15.f))},
+		}
+	};
+}
 
 Lighting::Lighting(std::shared_ptr<QOpenGLShaderProgram> program)
 	: shaderProgram_(program)
 {
 	program->bind();
-	lightPosUniform_ = program->uniformLocation("lightPos");
-	check(lightPosUniform_ != -1);
-	lightColorUniform_ = program->uniformLocation("lightColor");
-	check(lightColorUniform_ != -1);
-	viewPosUniform_ = program->uniformLocation("viewPos");
-	check(viewPosUniform_ != -1);
+	lightsUniform_ = bindUniform<Lights>(program, "lights");
+	viewPosUniform_ = bindUniform<QVector3D>(program, "viewPos");
 	program->release();
 }
 
 void Lighting::render(const Camera & camera)
 {
 	shaderProgram_->bind();
-	shaderProgram_->setUniformValue(lightPosUniform_, QVector3D(0.0f, 10.0f, 0.0f));
-	shaderProgram_->setUniformValue(lightColorUniform_, QVector3D(1.0f, 1.0f, 1.0f));
-	shaderProgram_->setUniformValue(viewPosUniform_, camera.getPosition());
+	lights_.spotLight.bulb.position = camera.getPosition();
+	lights_.spotLight.direction = camera.getFront();
+	setUniformValue(shaderProgram_, lightsUniform_, lights_);
+	setUniformValue(shaderProgram_, viewPosUniform_, camera.getPosition());
 	shaderProgram_->release();
 }

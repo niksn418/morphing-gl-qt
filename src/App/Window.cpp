@@ -1,5 +1,5 @@
 #include "Window.h"
-#include "debug.h"
+#include "utils.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -188,6 +188,7 @@ void Window::onRender()
 
 	// Clear buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.2, 0.2, 0.2, 1.0);
 
 	if (modelIndexChanged_) {
 		modelIndexChanged_ = false;

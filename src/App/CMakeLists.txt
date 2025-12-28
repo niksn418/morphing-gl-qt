@@ -8,8 +8,8 @@ set(SRCS
     Lighting.h
     Model.cpp
     Model.h
-    debug.h
     uniform_types.h
+    utils.h
 
     Shaders/diffuse.fs
     Shaders/diffuse.vs
