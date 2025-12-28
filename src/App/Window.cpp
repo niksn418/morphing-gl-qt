@@ -102,7 +102,11 @@ void Window::switchLightCamera()
 	switch (cameraId_)
 	{
 	case DIRECTIONAL_LIGHT:
-		camera_->setTarget(lighting_->lights_.dirLight.direction + camera_->getPosition());
+		{
+			QVector3D oldPos = camera_->getPosition();
+			camera_->setPosition(oldPos - lighting_->lights_.dirLight.direction);
+			camera_->setTarget(oldPos);
+		}
 		break;
 	case POINT_LIGHT:
 		camera_->setPosition(lighting_->lights_.pointLight.position);

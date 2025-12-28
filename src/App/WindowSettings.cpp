@@ -1,5 +1,4 @@
 #include "Window.h"
-#include "utils.h"
 
 #include <QButtonGroup>
 #include <QCheckBox>
@@ -11,6 +10,7 @@
 #include <QRadioButton>
 #include <QStackedLayout>
 #include <QSlider>
+#include <QtMath>
 
 using namespace window_internals;
 
@@ -135,10 +135,10 @@ QGroupBox * Window::initLightingParamsUi()
 	};
 	auto createCutOffSlider = [this, &lights](auto cutOffAccessor) {
 		auto valueTransform = [](int value) {
-			return std::cos(degreesToRadians(value / 2.f));
+			return std::cos(qDegreesToRadians(value / 2.f));
 		};
 		auto invTransform = [](float value) {
-			return std::round(radiansToDegrees(std::acos(value)) * 2.f);
+			return std::round(qRadiansToDegrees(std::acos(value)) * 2.f);
 		};
 		return createSlider(
 			0, 180, invTransform(cutOffAccessor(lights)),

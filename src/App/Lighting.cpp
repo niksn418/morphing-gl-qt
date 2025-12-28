@@ -1,5 +1,6 @@
 #include "Camera.h"
 #include "Lighting.h"
+#include <QtMath>
 #include <QVector3D>
 
 Lights Lighting::defaultLights() {
@@ -37,8 +38,8 @@ Lights Lighting::defaultLights() {
 				.quadratic = .032f
 			},
 			.direction{-2.f, -2.f, -2.f},
-			.cutOff{std::cos(degreesToRadians(12.5f))},
-			.outerCutOff{std::cos(degreesToRadians(15.f))},
+			.cutOff{std::cos(qDegreesToRadians(12.5f))},
+			.outerCutOff{std::cos(qDegreesToRadians(15.f))},
 		}
 	};
 }

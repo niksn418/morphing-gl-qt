@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "uniform_types.h"
-#include "utils.h"
 
 #define Light_FIELDS(FIELD)       \
 	FIELD(QVector3D, color)       \

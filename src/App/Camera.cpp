@@ -1,8 +1,6 @@
 #include "Camera.h"
 #include <QtCore>
 
-#include "utils.h"
-
 Camera::Camera()
 {
 	yaw_ = -90.0f;
@@ -31,8 +29,12 @@ void Camera::setPosition(const QVector3D & position)
 
 void Camera::setTarget(const QVector3D & target)
 {
-	front_ = (target - position_).normalized();
-	viewDirty_ = true;
+	auto front = target - position_;
+	yaw_ = qRadiansToDegrees(std::atan2(front.x(), front.z()));
+	float horizontal = std::sqrt(front.x() * front.x() + front.z() * front.z());
+	pitch_ = qRadiansToDegrees(std::atan2(front.y(), horizontal));
+	pitch_ = qBound(minPitch_, pitch_, maxPitch_);
+	updateCameraVectors();
 }
 
 void Camera::setUp(const QVector3D & up)
@@ -154,9 +156,9 @@ void Camera::moveDown(float distance)
 void Camera::updateCameraVectors()
 {
 	QVector3D front;
-	front.setX(cos(degreesToRadians(yaw_)) * cos(degreesToRadians(pitch_)));
-	front.setY(sin(degreesToRadians(pitch_)));
-	front.setZ(sin(degreesToRadians(yaw_)) * cos(degreesToRadians(pitch_)));
+	front.setX(cos(qDegreesToRadians(yaw_)) * cos(qDegreesToRadians(pitch_)));
+	front.setY(sin(qDegreesToRadians(pitch_)));
+	front.setZ(sin(qDegreesToRadians(yaw_)) * cos(qDegreesToRadians(pitch_)));
 	front_ = front.normalized();
 
 	right_ = QVector3D::crossProduct(front_, worldUp_).normalized();
