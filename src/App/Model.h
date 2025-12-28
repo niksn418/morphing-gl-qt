@@ -9,6 +9,8 @@
 #include <memory>
 #include <vector>
 
+#include "uniform_types.h"
+
 struct Vertex {
 	float position[3];
 	float normal[3];
@@ -20,6 +22,15 @@ struct Mesh {
 	std::vector<uint32_t> indices;
 	int textureIndex = -1;
 };
+
+#define ModelUniform_FIELDS(FIELD)  \
+	FIELD(QMatrix4x4, mvp)          \
+	FIELD(QMatrix4x4, transform)    \
+	FIELD(QMatrix3x3, normalMatrix) \
+	FIELD(QVector3D, bBoxCenter)    \
+	FIELD(float, bBoxRadius)        \
+	FIELD(float, morphing)
+define_uniform_struct(ModelUniform, ModelUniform_FIELDS)
 
 class Model
 {
@@ -77,10 +88,5 @@ private:
 	std::vector<std::unique_ptr<QOpenGLBuffer>> ibos_;
 	std::vector<std::unique_ptr<QOpenGLVertexArrayObject>> vaos_;
 
-	GLint mvpUniform_ = -1;
-	GLint modelUniform_ = -1;
-	GLint normalMatrixUniform_ = -1;
-	GLint bBoxCenterUniform_ = -1;
-	GLint bBoxRadiusUniform_ = -1;
-	GLint morphingUniform_ = -1;
+	UniformLocType<ModelUniform> modelUniform_;
 };

@@ -1,6 +1,5 @@
 #include "Model.h"
 #include "Camera.h"
-#include "debug.h"
 #include <QFile>
 #include <QImage>
 #include <QOpenGLFunctions>
@@ -10,18 +9,7 @@ Model::Model(std::shared_ptr<QOpenGLShaderProgram> program)
 	: shaderProgram_(program)
 {
 	program->bind();
-	mvpUniform_ = program->uniformLocation("mvp");
-	check(mvpUniform_ != -1);
-	modelUniform_ = program->uniformLocation("model");
-	check(modelUniform_ != -1);
-	normalMatrixUniform_ = program->uniformLocation("normalMatrix");
-	check(normalMatrixUniform_ != -1);
-	bBoxCenterUniform_ = program->uniformLocation("bBoxCenter");
-	check(bBoxCenterUniform_ != -1);
-	bBoxRadiusUniform_ = program->uniformLocation("bBoxRadius");
-	check(bBoxRadiusUniform_ != -1);
-	morphingUniform_ = program->uniformLocation("morphing");
-	check(morphingUniform_ != -1);
+	modelUniform_ = bindUniform<ModelUniform>(program, "model");
 	program->release();
 }
 
@@ -302,12 +290,14 @@ void Model::render(const Camera & camera, const QOpenGLContext & context)
 	const auto & transform = getTransform();
 	const auto mvp = camera.getViewProjectionMatrix() * transform;
 
-	shaderProgram_->setUniformValue(mvpUniform_, mvp);
-	shaderProgram_->setUniformValue(modelUniform_, transform);
-	shaderProgram_->setUniformValue(normalMatrixUniform_, transform.normalMatrix());
-	shaderProgram_->setUniformValue(bBoxCenterUniform_, (bounding_box.max + bounding_box.min) / 2);
-	shaderProgram_->setUniformValue(bBoxRadiusUniform_, (bounding_box.max - bounding_box.min).length() / 2);
-	shaderProgram_->setUniformValue(morphingUniform_, morphing_);
+	setUniformValue(shaderProgram_, modelUniform_, ModelUniform {
+		.mvp = mvp,
+		.transform = transform,
+		.normalMatrix = transform.normalMatrix(),
+		.bBoxCenter = (bounding_box.max + bounding_box.min) / 2,
+		.bBoxRadius = (bounding_box.max - bounding_box.min).length() / 2,
+		.morphing = morphing_,
+	});
 
 	for (size_t i = 0; i < meshes_.size(); ++i)
 	{
