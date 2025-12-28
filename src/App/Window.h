@@ -12,6 +12,28 @@
 #include <functional>
 #include <memory>
 
+namespace window_internals
+{
+	struct model_variant {
+		QString name;
+		float scale;
+		QVector3D position{0.f, 0.f, 0.f};
+	};
+	inline const std::array MODEL_VARIANTS = {
+		model_variant{"sponza", 0.01f},
+		model_variant{"Duck", 0.01f},
+		model_variant{"WaterBottle", 5.f, {0.f, 1.f, 0.f}},
+		model_variant{"ScatteringSkull", 5.f},
+	};
+
+	enum cameras {
+		DIRECTIONAL_LIGHT,
+		POINT_LIGHT,
+		SPOTLIGHT,
+		DEFAULT,
+	};
+} // namespace window_internals
+
 class Window final : public fgl::GLWidget
 {
 	Q_OBJECT

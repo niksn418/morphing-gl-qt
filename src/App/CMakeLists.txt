@@ -1,6 +1,7 @@
 set(SRCS
     main.cpp
     Window.cpp
+    WindowSettings.cpp
     Window.h
     Camera.cpp
     Camera.h
