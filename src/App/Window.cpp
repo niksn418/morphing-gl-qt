@@ -22,7 +22,7 @@ namespace
 	const std::array MODEL_VARIANTS = {
 		model_variant{"sponza", 0.01f},
 		model_variant{"Duck", 0.01f},
-		model_variant{"WaterBottle", 5.f},
+		model_variant{"WaterBottle", 5.f, {0.f, 1.f, 0.f}},
 	};
 }// namespace
 
@@ -156,7 +156,7 @@ void Window::onInit()
 	check(program_->link());
 
 	camera_ = std::make_unique<Camera>();
-	camera_->setPosition(QVector3D(0.0f, 2.0f, 0.0f));
+	camera_->setPosition(QVector3D(-1.0f, 2.0f, 0.0f));
 	camera_->setYaw(0.0f);
 	camera_->setPitch(-30.0f);
 	camera_->setMoveSpeed(25.0f);

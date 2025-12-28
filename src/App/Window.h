@@ -72,7 +72,7 @@ private:
 
 	bool firstMouse_{true};
 	QPoint lastMousePos_;
-	unsigned int modelIndex_ = 0;
+	unsigned int modelIndex_ = 1;
 	bool modelIndexChanged_ = false;
 
 	QSet<int> pressedKeys_;
