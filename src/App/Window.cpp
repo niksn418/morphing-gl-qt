@@ -3,12 +3,15 @@
 
 #include <QButtonGroup>
 #include <QCheckBox>
+#include <QColorDialog>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QMouseEvent>
 #include <QLabel>
 #include <QOpenGLShaderProgram>
+#include <QPushButton>
 #include <QRadioButton>
+#include <QStackedLayout>
 #include <QVBoxLayout>
 #include <QScreen>
 #include <QSlider>
@@ -107,16 +110,127 @@ QGroupBox * Window::initModelSettingsUi()
 	modelSettingsLayout->addRow("Use Model's Texture:", modelUseTexture);
 
 	modelSettings->setLayout(modelSettingsLayout);
-	modelSettings->setStyleSheet("font-size: 14pt;");
+	modelSettings->setStyleSheet("font-size: 12pt;");
 	modelSettings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 	modelSettings->setFixedHeight(modelSettings->sizeHint().height());
 	return modelSettings;
 }
 
+QGroupBox * Window::initLightingParamsUi()
+{
+	auto lights = Lighting::defaultLights();
+	auto params = new QGroupBox("Parameters");
+	auto paramsPages = new QStackedLayout();
+	auto pageCombo = new QComboBox();
+	auto createParamSLider = [this, &lights](float min, float max, auto accessor) {
+		return createFloatSlider(
+			min, max, accessor(lights), 0.01f,
+			[this, accessor](float value) {
+				accessor(lighting_->lights_) = value;
+			}
+		);
+	};
+	auto addStrengths = [this, createParamSLider](QFormLayout * params, auto lightAccessor) {
+		params->addRow("ambientStrength", createParamSLider(
+			0.f, 1.f, [lightAccessor](Lights & lights) -> float& {
+				return lightAccessor(lights).ambientStrength;
+			})
+		);
+		params->addRow("diffuseStrength", createParamSLider(
+			0.f, 1.f, [lightAccessor](Lights & lights) -> float& {
+				return lightAccessor(lights).diffuseStrength;
+			})
+		);
+		params->addRow("specularStrength", createParamSLider(
+			0.f, 1.f, [lightAccessor](Lights & lights) -> float& {
+				return lightAccessor(lights).diffuseStrength;
+			})
+		);
+	};
+	auto addAttenuation = [this, createParamSLider](QFormLayout * params, auto lightAccessor) {
+		params->addRow("linear", createParamSLider(
+			0.f, 1.f, [lightAccessor](Lights & lights) -> float& {
+				return lightAccessor(lights).linear;
+			})
+		);
+		params->addRow("quadratic", createParamSLider(
+			0.f, 2.f, [lightAccessor](Lights & lights) -> float& {
+				return lightAccessor(lights).quadratic;
+			})
+		);
+	};
+	auto createCutOffSlider = [this, &lights](auto cutOffAccessor) {
+		auto valueTransform = [](int value) {
+			return std::cos(degreesToRadians(value / 2.f));
+		};
+		auto invTransform = [](float value) {
+			return std::round(radiansToDegrees(std::acos(value)) * 2.f);
+		};
+		return createSlider(
+			0, 180, invTransform(cutOffAccessor(lights)),
+			[cutOffAccessor, valueTransform, this](int value) {
+				cutOffAccessor(lighting_->lights_) = valueTransform(value);
+			},
+			[](int value) {
+				return QString::number(value / 2.f) + "°";
+			}
+		);
+	};
+
+	auto dirContainerWidget = new QWidget;
+	auto dirLightParams = new QFormLayout(dirContainerWidget);
+	addStrengths(dirLightParams, [](Lights & lights) -> Light& {
+		return lights.dirLight.light;
+	});
+	paramsPages->addWidget(dirContainerWidget);
+	pageCombo->addItem("Directional");
+
+	auto pointContainerWidget = new QWidget;
+	auto pointLightParams = new QFormLayout(pointContainerWidget);
+	addStrengths(pointLightParams, [](Lights & lights) -> Light& {
+		return lights.pointLight.light;
+	});
+	addAttenuation(pointLightParams, [](Lights & lights) -> PointLight& {
+		return lights.pointLight;
+	});
+	paramsPages->addWidget(pointContainerWidget);
+	pageCombo->addItem("Point");
+
+	auto spotContainerWidget = new QWidget;
+	auto spotlightParams = new QFormLayout(spotContainerWidget);
+	addStrengths(spotlightParams, [](Lights & lights) -> Light& {
+		return lights.spotLight.bulb.light;
+	});
+	addAttenuation(spotlightParams, [](Lights & lights) -> PointLight& {
+		return lights.spotLight.bulb;
+	});
+	spotlightParams->addRow("cutOff", createCutOffSlider(
+		[](Lights & lights) -> float& {
+			return lights.spotLight.cutOff;
+		})
+	);
+	spotlightParams->addRow("outerCutOff", createCutOffSlider(
+		[](Lights & lights) -> float& {
+			return lights.spotLight.outerCutOff;
+		})
+	);
+	paramsPages->addWidget(spotContainerWidget);
+	pageCombo->addItem("Spotlight");
+
+	auto paramsLayout = new QVBoxLayout();
+	paramsLayout->addItem(paramsPages);
+	paramsLayout->addWidget(pageCombo);
+	connect(pageCombo, qOverload<int>(&QComboBox::currentIndexChanged),
+			paramsPages, &QStackedLayout::setCurrentIndex);
+	pageCombo->setCurrentIndex(0);
+	params->setLayout(paramsLayout);
+	return params;
+}
+
 QGroupBox * Window::initLightingSettingsUi()
 {
 	auto lightSettings = new QGroupBox("Lighting Settings:");
-	auto lightSettingsLayout = new QGridLayout();
+	auto lightSettingsLayout = new QHBoxLayout();
 
 	auto cameraOption = new QGroupBox("Move Light");
 	auto buttons = new QButtonGroup();
@@ -134,10 +248,39 @@ QGroupBox * Window::initLightingSettingsUi()
 		switchLightCamera();
 	});
 	cameraOption->setLayout(cameraOptionLayout);
-	lightSettingsLayout->addWidget(cameraOption, 0, 0);
+	lightSettingsLayout->addWidget(cameraOption);
+
+	auto colorsSettings = new QGroupBox("Colors");
+	auto colorsLayout = new QVBoxLayout();
+	auto addColorDialog = [this](QString name, auto slot) {
+		auto button = new QPushButton(name);
+		connect(button, &QPushButton::clicked, this, [slot = std::move(slot), button](bool) {
+			QPalette pal = button->palette();
+			auto color = QColorDialog::getColor(pal.color(QPalette::Button));
+			if (color.isValid()) {
+				pal.setColor(QPalette::Button, color);
+				button->setPalette(pal);
+				slot(QVector3D(color.redF(), color.greenF(), color.blueF()));
+			}
+		});
+		return button;
+	};
+	colorsLayout->addWidget(addColorDialog("Directional", [this](QVector3D color) {
+		lighting_->lights_.dirLight.light.color = color;
+	}));
+	colorsLayout->addWidget(addColorDialog("Point", [this](QVector3D color) {
+		lighting_->lights_.pointLight.light.color = color;
+	}));
+	colorsLayout->addWidget(addColorDialog("Spotlight", [this](QVector3D color) {
+		lighting_->lights_.spotLight.bulb.light.color = color;
+	}));
+	colorsSettings->setLayout(colorsLayout);
+	lightSettingsLayout->addWidget(colorsSettings);
+
+	lightSettingsLayout->addWidget(initLightingParamsUi());
 
 	lightSettings->setLayout(lightSettingsLayout);
-	lightSettings->setStyleSheet("font-size: 14pt;");
+	lightSettings->setStyleSheet("font-size: 12pt;");
 	lightSettings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 	lightSettings->setFixedHeight(lightSettings->sizeHint().height());
 	return lightSettings;

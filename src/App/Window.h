@@ -64,6 +64,7 @@ private:
 	std::unique_ptr<QGroupBox> initSettingsUi();
 	QGroupBox * initModelSettingsUi();
 	QGroupBox * initLightingSettingsUi();
+	QGroupBox * initLightingParamsUi();
 
 signals:
 	void updateUI();

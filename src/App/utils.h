@@ -11,6 +11,11 @@ inline constexpr float degreesToRadians(float degrees)
 	return degrees * static_cast<float>(M_PI) / 180.0f;
 }
 
+inline constexpr float radiansToDegrees(float radians)
+{
+	return radians / static_cast<float>(M_PI) * 180.0f;
+}
+
 #define check(cmd)							        \
 { 											        \
 	bool status = cmd; 						        \
