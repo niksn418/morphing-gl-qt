@@ -52,6 +52,8 @@ private:
 	[[nodiscard]] PerfomanceMetricsGuard captureMetrics();
 	void processInput();
 
+	void reloadModel();
+
 	template <typename Func1, typename Func2>
 	QLayout * createSlider(int min, int max, int defaultValue, Func1 slot, Func2 valueFormat);
 	template <typename Func>
@@ -70,6 +72,8 @@ private:
 
 	bool firstMouse_{true};
 	QPoint lastMousePos_;
+	unsigned int modelIndex_ = 0;
+	bool modelIndexChanged_ = false;
 
 	QSet<int> pressedKeys_;
 

@@ -32,6 +32,7 @@ Model::~Model()
 
 bool Model::loadFromGLTF(const QString & filePath)
 {
+	cleanupResources();
 	QFile modelFile(filePath);
 	if (!modelFile.open(QIODevice::ReadOnly))
 	{
@@ -257,6 +258,12 @@ void Model::setRotation(const QVector3D & rotation)
 void Model::setScale(const QVector3D & scale)
 {
 	scale_ = scale;
+	markTransformDirty();
+}
+
+void Model::setScale(float scale)
+{
+	scale_ = QVector3D(scale, scale, scale);
 	markTransformDirty();
 }
 

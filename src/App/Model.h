@@ -37,6 +37,7 @@ public:
 	void setPosition(const QVector3D & position);
 	void setRotation(const QVector3D & rotation);
 	void setScale(const QVector3D & scale);
+	void setScale(float scale);
 	void setMorphing(float morphing);
 
 	const QVector3D & getPosition() const { return position_; }

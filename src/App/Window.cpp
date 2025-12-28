@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "debug.h"
 
+#include <QComboBox>
 #include <QFormLayout>
 #include <QMouseEvent>
 #include <QLabel>
@@ -10,6 +11,20 @@
 #include <QSlider>
 
 #include <cmath>
+
+namespace
+{
+	struct model_variant {
+		QString name;
+		float scale;
+		QVector3D position{0.f, 0.f, 0.f};
+	};
+	const std::array MODEL_VARIANTS = {
+		model_variant{"sponza", 0.01f},
+		model_variant{"Duck", 0.01f},
+		model_variant{"WaterBottle", 5.f},
+	};
+}// namespace
 
 template <typename Func1, typename Func2>
 QLayout * Window::createSlider(int min, int max, int defaultValue, Func1 slot, Func2 valueFormat)
@@ -64,11 +79,30 @@ Window::Window() noexcept
 	);
 	settingsUi_->setContentsMargins(0, 0, 0, 0);
 	settingsUi_->setVisible(settingsOpen_);
-	auto settingsLayout = new QFormLayout();
-	settingsLayout->addRow("Morphing:", createSlider(
+
+	auto modelSettings = new QGroupBox("Model Settings:");
+	auto modelSettingsLayout = new QFormLayout();
+	modelSettingsLayout->addRow("Morphing:", createSlider(
 		0, 100, 0, [this](int value) { model_->setMorphing(value / 100.f); },
 		[](int value) { return QString::number(value) + '%'; }
 	));
+	auto modelVariants = new QComboBox();
+	for (const auto & model: MODEL_VARIANTS)
+		modelVariants->addItem(model.name);
+	modelVariants->setCurrentIndex(modelIndex_);
+	connect(modelVariants, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
+		modelIndex_ = index;
+		modelIndexChanged_ = true;
+	});
+	modelSettingsLayout->addRow("Model Name:", modelVariants);
+	modelSettings->setLayout(modelSettingsLayout);
+	modelSettings->setStyleSheet("font-size: 14pt;");
+	modelSettings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+	modelSettings->setFixedHeight(modelSettings->sizeHint().height());
+
+	auto settingsLayout = new QVBoxLayout();
+	settingsLayout->addWidget(modelSettings);
+	settingsLayout->addStretch();
 	settingsUi_->setLayout(settingsLayout);
 
 	const auto formatFPS = [](const auto value) {
@@ -80,7 +114,7 @@ Window::Window() noexcept
 
 	auto layout = new QVBoxLayout();
 	layout->addWidget(fps);
-	layout->addStretch(1);
+	layout->addStretch();
 
 	setLayout(layout);
 
@@ -131,9 +165,7 @@ void Window::onInit()
 	lighting_ = std::make_unique<Lighting>(program_);
 
 	model_ = std::make_unique<Model>(program_);
-	check(model_->loadFromGLTF(":/Models/sponza.glb"));
-	model_->setScale(QVector3D(0.01f, 0.01f, 0.01f));
-	model_->setPosition(QVector3D(0.0f, 0.0f, 0.0f));
+	reloadModel();
 
 	// Еnable depth test and face culling
 	glEnable(GL_DEPTH_TEST);
@@ -143,12 +175,24 @@ void Window::onInit()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void Window::reloadModel()
+{
+	check(model_->loadFromGLTF(QString(":/Models/%1.glb").arg(MODEL_VARIANTS[modelIndex_].name)));
+	model_->setScale(MODEL_VARIANTS[modelIndex_].scale);
+	model_->setPosition(MODEL_VARIANTS[modelIndex_].position);
+}
+
 void Window::onRender()
 {
 	const auto guard = captureMetrics();
 
 	// Clear buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	if (modelIndexChanged_) {
+		modelIndexChanged_ = false;
+		reloadModel();
+	}
 
 	const auto& camera = *camera_;
 	const auto& glContext = *context();

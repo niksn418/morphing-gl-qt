@@ -1,6 +1,8 @@
 <RCC>
     <qresource prefix="/">
+        <file>Models/Duck.glb</file>
         <file>Models/sponza.glb</file>
+        <file>Models/WaterBottle.glb</file>
     </qresource>
     <qresource prefix="/">
         <file>Shaders/diffuse.fs</file>
