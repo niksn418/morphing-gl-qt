@@ -14,8 +14,7 @@
 
 using namespace window_internals;
 
-template <typename Func1, typename Func2>
-QLayout * Window::createSlider(int min, int max, int defaultValue, Func1 slot, Func2 valueFormat)
+QLayout * Window::createSlider(int min, int max, int defaultValue, auto slot, auto valueFormat)
 {
 	auto layout = new QHBoxLayout();
 	auto slider = new QSlider(Qt::Horizontal);
@@ -35,8 +34,7 @@ QLayout * Window::createSlider(int min, int max, int defaultValue, Func1 slot, F
 	return layout;
 }
 
-template <typename Func>
-QLayout * Window::createIntSlider(int min, int max, int defaultValue, Func slot)
+QLayout * Window::createIntSlider(int min, int max, int defaultValue, auto slot)
 {
 	return createSlider(
 		min, max, defaultValue, std::move(slot),
@@ -44,8 +42,7 @@ QLayout * Window::createIntSlider(int min, int max, int defaultValue, Func slot)
 	);
 }
 
-template <typename Func>
-QLayout * Window::createFloatSlider(float min, float max, float defaultValue, float step, Func slot)
+QLayout * Window::createFloatSlider(float min, float max, float defaultValue, float step, auto slot)
 {
 	return createSlider(
 		static_cast<int>(min / step), static_cast<int>(max / step),
@@ -53,6 +50,21 @@ QLayout * Window::createFloatSlider(float min, float max, float defaultValue, fl
 		[slot = std::move(slot), step](int value) { slot(value * step); },
 		[step](int value) { return QString::number(value * step); }
 	);
+}
+
+QWidget * Window::addColorDialog(QString name, auto slot)
+{
+	auto button = new QPushButton(name);
+	connect(button, &QPushButton::clicked, this, [slot = std::move(slot), button](bool) {
+		QPalette pal = button->palette();
+		auto color = QColorDialog::getColor(pal.color(QPalette::Button));
+		if (color.isValid()) {
+			pal.setColor(QPalette::Button, color);
+			button->setPalette(pal);
+			slot(QVector3D(color.redF(), color.greenF(), color.blueF()));
+		}
+	});
+	return button;
 }
 
 QGroupBox * Window::initModelSettingsUi()
@@ -75,13 +87,21 @@ QGroupBox * Window::initModelSettingsUi()
 	});
 	modelSettingsLayout->addRow("Model Name:", modelVariants);
 
+	auto fallbackTextureLayout = new QHBoxLayout();
 	auto modelUseTexture = new QCheckBox();
 	modelUseTexture->setTristate(false);
 	modelUseTexture->setCheckState(Qt::Checked);
-	connect(modelUseTexture, &QCheckBox::stateChanged, this, [this](int state) {
-		model_->useTexture(state == Qt::Checked);
+	auto modelColor = addColorDialog("Model Color", [this](QVector3D color) {
+		model_->useFallbackTexture(color);
 	});
-	modelSettingsLayout->addRow("Use Model's Texture:", modelUseTexture);
+	modelColor->setEnabled(false);
+	connect(modelUseTexture, &QCheckBox::stateChanged, this, [this, modelColor](int state) {
+		model_->useFallbackTexture(state != Qt::Checked);
+		modelColor->setEnabled(state != Qt::Checked);
+	});
+	fallbackTextureLayout->addWidget(modelUseTexture);
+	fallbackTextureLayout->addWidget(modelColor);
+	modelSettingsLayout->addRow("Use Model's Texture:", fallbackTextureLayout);
 
 	modelSettings->setLayout(modelSettingsLayout);
 	modelSettings->setStyleSheet("font-size: 12pt;");
@@ -226,19 +246,6 @@ QGroupBox * Window::initLightingSettingsUi()
 
 	auto colorsSettings = new QGroupBox("Colors");
 	auto colorsLayout = new QVBoxLayout();
-	auto addColorDialog = [this](QString name, auto slot) {
-		auto button = new QPushButton(name);
-		connect(button, &QPushButton::clicked, this, [slot = std::move(slot), button](bool) {
-			QPalette pal = button->palette();
-			auto color = QColorDialog::getColor(pal.color(QPalette::Button));
-			if (color.isValid()) {
-				pal.setColor(QPalette::Button, color);
-				button->setPalette(pal);
-				slot(QVector3D(color.redF(), color.greenF(), color.blueF()));
-			}
-		});
-		return button;
-	};
 	colorsLayout->addWidget(addColorDialog("Directional", [this](QVector3D color) {
 		lighting_->lights_.dirLight.light.color = color;
 	}));

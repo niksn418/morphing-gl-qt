@@ -78,12 +78,10 @@ private:
 	void switchLightCamera();
 	void syncLightCamera();
 
-	template <typename Func1, typename Func2>
-	QLayout * createSlider(int min, int max, int defaultValue, Func1 slot, Func2 valueFormat);
-	template <typename Func>
-	QLayout * createIntSlider(int min, int max, int defaultValue, Func slot);
-	template <typename Func>
-	QLayout * createFloatSlider(float min, float max, float defaultValue, float step, Func slot);
+	QLayout * createSlider(int min, int max, int defaultValue, auto slot, auto valueFormat);
+	QLayout * createIntSlider(int min, int max, int defaultValue, auto slot);
+	QLayout * createFloatSlider(float min, float max, float defaultValue, float step, auto slot);
+	QWidget * addColorDialog(QString name, auto slot);
 	std::unique_ptr<QGroupBox> initSettingsUi();
 	QGroupBox * initModelSettingsUi();
 	QGroupBox * initLightingSettingsUi();

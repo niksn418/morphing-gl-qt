@@ -32,6 +32,11 @@ struct Mesh {
 	FIELD(float, morphing)
 define_uniform_struct(ModelUniform, ModelUniform_FIELDS)
 
+#define ModelTexture_FIELDS(FIELD)  \
+	FIELD(QVector3D, color)  \
+	FIELD(bool, use)
+define_uniform_struct(FallbackTexture, ModelTexture_FIELDS)
+
 class Model
 {
 public:
@@ -50,7 +55,8 @@ public:
 	void setScale(const QVector3D & scale);
 	void setScale(float scale);
 	void setMorphing(float morphing);
-	void useTexture(bool use) { useTexture_ = use; }
+	void useFallbackTexture(bool use) { fallbackTexture_.use = use; }
+	void useFallbackTexture(QVector3D color) { fallbackTexture_.color = color; }
 
 	const QVector3D & getPosition() const { return position_; }
 	const QVector3D & getRotation() const { return rotation_; }
@@ -71,7 +77,7 @@ private:
 	QVector3D rotation_{0.0f, 0.0f, 0.0f};
 	QVector3D scale_{1.0f, 1.0f, 1.0f};
 	float morphing_ = 0.f;
-	bool useTexture_ = true;
+	FallbackTexture fallbackTexture_;
 
 	mutable QMatrix4x4 transform_;
 	mutable bool transformDirty_ = true;
@@ -91,5 +97,5 @@ private:
 	std::vector<std::unique_ptr<QOpenGLVertexArrayObject>> vaos_;
 
 	UniformLocType<ModelUniform> modelUniform_;
-	UniformLocType<bool> useTextureUniform_;
+	UniformLocType<FallbackTexture> fallbackTextureUniform_;
 };

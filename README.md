@@ -10,7 +10,7 @@ Features:
     - Holding `Ctrl` decreases the moving speed;
 - `Esc` key opens semi-transparent settings menu, which allows:
     - Choosing model
-    - Enabling/Disabling use of model's texture
+    - Enabling/Disabling use of model's texture and setting model color
     - Configuring model morphing to sphere
     - Changing colors and other parameters of each light source
     - Moving each light source. To do this, choose it in `Move Light` settings section, then it will be controlled with the camera.

@@ -38,10 +38,16 @@ struct Lights
 	SpotLight spotLight;
 };
 
+struct FallbackTexture
+{
+	vec3 color;
+	bool use;
+};
+
 uniform sampler2D tex_2d;
 uniform Lights lights;
 uniform vec3 viewPos;
-uniform bool useTexture;
+uniform FallbackTexture fallbackTexture;
 
 in vec3 vert_pos;
 in vec3 vert_norm;
@@ -93,7 +99,9 @@ void main() {
 	lightColors += spotLightColor(lights.spotLight, norm, viewDir);
 	vec3 lightColor = lightColors[0] + lightColors[1] + lightColors[2];
 
-	vec4 texColor = useTexture ? texture(tex_2d, vert_tex) : vec4(0.8, 0.0, 0.8, 1.0);
+	vec4 texColor = fallbackTexture.use
+					? vec4(fallbackTexture.color, 0.0)
+					: texture(tex_2d, vert_tex);
 	vec3 result = lightColor * texColor.rgb;
 	out_col = vec4(result, texColor.a);
 }
