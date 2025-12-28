@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "utils.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QMouseEvent>
@@ -23,6 +24,7 @@ namespace
 		model_variant{"sponza", 0.01f},
 		model_variant{"Duck", 0.01f},
 		model_variant{"WaterBottle", 5.f, {0.f, 1.f, 0.f}},
+		model_variant{"ScatteringSkull", 5.f},
 	};
 }// namespace
 
@@ -66,19 +68,20 @@ QLayout * Window::createFloatSlider(float min, float max, float defaultValue, fl
 		[step](int value) { return QString::number(value * step); }
 	);
 }
-Window::Window() noexcept
+
+std::unique_ptr<QGroupBox> Window::initSettingsUi()
 {
-	settingsUi_ = std::make_unique<QGroupBox>("Settings", this);
-	settingsUi_->setAlignment(Qt::AlignHCenter);
-	settingsUi_->setStyleSheet(
+	auto settingsUi = std::make_unique<QGroupBox>("Settings", this);
+	settingsUi->setAlignment(Qt::AlignHCenter);
+	settingsUi->setStyleSheet(
 		"QGroupBox {"
 			"background-color: rgba(128, 128, 128, 128);"
 			"font-weight: bold;"
 			"font-size: 20pt;"
 		"}"
 	);
-	settingsUi_->setContentsMargins(0, 0, 0, 0);
-	settingsUi_->setVisible(settingsOpen_);
+	settingsUi->setContentsMargins(0, 0, 0, 0);
+	settingsUi->setVisible(settingsOpen_);
 
 	auto modelSettings = new QGroupBox("Model Settings:");
 	auto modelSettingsLayout = new QFormLayout();
@@ -95,6 +98,13 @@ Window::Window() noexcept
 		modelIndexChanged_ = true;
 	});
 	modelSettingsLayout->addRow("Model Name:", modelVariants);
+	auto modelUseTexture = new QCheckBox();
+	modelUseTexture->setTristate(false);
+	modelUseTexture->setCheckState(Qt::Checked);
+	connect(modelUseTexture, &QCheckBox::stateChanged, this, [this](int state) {
+		model_->useTexture(state == Qt::Checked);
+	});
+	modelSettingsLayout->addRow("Use Model's Texture:", modelUseTexture);
 	modelSettings->setLayout(modelSettingsLayout);
 	modelSettings->setStyleSheet("font-size: 14pt;");
 	modelSettings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
@@ -103,8 +113,13 @@ Window::Window() noexcept
 	auto settingsLayout = new QVBoxLayout();
 	settingsLayout->addWidget(modelSettings);
 	settingsLayout->addStretch();
-	settingsUi_->setLayout(settingsLayout);
+	settingsUi->setLayout(settingsLayout);
+	return settingsUi;
+}
 
+Window::Window() noexcept
+	: settingsUi_(initSettingsUi())
+{
 	const auto formatFPS = [](const auto value) {
 		return QString("FPS: %1").arg(QString::number(value));
 	};

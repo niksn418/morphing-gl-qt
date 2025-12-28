@@ -50,6 +50,7 @@ public:
 	void setScale(const QVector3D & scale);
 	void setScale(float scale);
 	void setMorphing(float morphing);
+	void useTexture(bool use) { useTexture_ = use; }
 
 	const QVector3D & getPosition() const { return position_; }
 	const QVector3D & getRotation() const { return rotation_; }
@@ -70,6 +71,7 @@ private:
 	QVector3D rotation_{0.0f, 0.0f, 0.0f};
 	QVector3D scale_{1.0f, 1.0f, 1.0f};
 	float morphing_ = 0.f;
+	bool useTexture_ = true;
 
 	mutable QMatrix4x4 transform_;
 	mutable bool transformDirty_ = true;
@@ -89,4 +91,5 @@ private:
 	std::vector<std::unique_ptr<QOpenGLVertexArrayObject>> vaos_;
 
 	UniformLocType<ModelUniform> modelUniform_;
+	UniformLocType<bool> useTextureUniform_;
 };

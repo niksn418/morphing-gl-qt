@@ -10,6 +10,7 @@ Model::Model(std::shared_ptr<QOpenGLShaderProgram> program)
 {
 	program->bind();
 	modelUniform_ = bindUniform<ModelUniform>(program, "model");
+	useTextureUniform_ = bindUniform<bool>(program, "useTexture");
 	program->release();
 }
 
@@ -298,6 +299,7 @@ void Model::render(const Camera & camera, const QOpenGLContext & context)
 		.bBoxRadius = (bounding_box.max - bounding_box.min).length() / 2,
 		.morphing = morphing_,
 	});
+	setUniformValue(shaderProgram_, useTextureUniform_, useTexture_);
 
 	for (size_t i = 0; i < meshes_.size(); ++i)
 	{

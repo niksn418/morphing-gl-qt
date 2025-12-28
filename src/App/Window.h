@@ -59,6 +59,7 @@ private:
 	QLayout * createIntSlider(int min, int max, int defaultValue, Func slot);
 	template <typename Func>
 	QLayout * createFloatSlider(float min, float max, float defaultValue, float step, Func slot);
+	std::unique_ptr<QGroupBox> initSettingsUi();
 
 signals:
 	void updateUI();
