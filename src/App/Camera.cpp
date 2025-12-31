@@ -30,7 +30,7 @@ void Camera::setPosition(const QVector3D & position)
 void Camera::setTarget(const QVector3D & target)
 {
 	auto front = target - position_;
-	yaw_ = qRadiansToDegrees(std::atan2(front.x(), front.z()));
+	yaw_ = qRadiansToDegrees(std::atan2(front.z(), front.x()));
 	float horizontal = std::sqrt(front.x() * front.x() + front.z() * front.z());
 	pitch_ = qRadiansToDegrees(std::atan2(front.y(), horizontal));
 	pitch_ = qBound(minPitch_, pitch_, maxPitch_);

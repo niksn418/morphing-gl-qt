@@ -99,17 +99,16 @@ void Window::switchLightCamera()
 		cameraBackup_ = std::move(camera_);
 		camera_ = std::make_unique<Camera>(*cameraBackup_);
 	}
+	QVector3D oldPos = camera_->getPosition();
 	switch (cameraId_)
 	{
 	case DIRECTIONAL_LIGHT:
-		{
-			QVector3D oldPos = camera_->getPosition();
-			camera_->setPosition(oldPos - lighting_->lights_.dirLight.direction);
-			camera_->setTarget(oldPos);
-		}
+		camera_->setPosition(oldPos - lighting_->lights_.dirLight.direction);
+		camera_->setTarget(oldPos);
 		break;
 	case POINT_LIGHT:
 		camera_->setPosition(lighting_->lights_.pointLight.position);
+		camera_->setTarget(oldPos);
 		break;
 	case SPOTLIGHT:
 		camera_->setPosition(lighting_->lights_.spotLight.bulb.position);

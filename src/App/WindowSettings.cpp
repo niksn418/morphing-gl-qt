@@ -90,7 +90,7 @@ QGroupBox * Window::initModelSettingsUi()
 	auto fallbackTextureLayout = new QHBoxLayout();
 	auto modelUseTexture = new QCheckBox();
 	modelUseTexture->setTristate(false);
-	modelUseTexture->setCheckState(Qt::Checked);
+	modelUseTexture->setChecked(true);
 	auto modelColor = addColorDialog("Model Color", [this](QVector3D color) {
 		model_->useFallbackTexture(color);
 	});
