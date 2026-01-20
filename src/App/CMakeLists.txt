@@ -9,11 +9,15 @@ set(SRCS
     Lighting.h
     Model.cpp
     Model.h
+    Quad.cpp
+    Quad.h
     uniform_types.h
     utils.h
 
+    Shaders/model.vs
+    Shaders/model.fs
+    Shaders/noop.vs
     Shaders/diffuse.fs
-    Shaders/diffuse.vs
 )
 
 find_package(Qt5 COMPONENTS Widgets REQUIRED)

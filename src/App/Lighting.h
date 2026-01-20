@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Camera.h"
+#include "Quad.h"
 #include <QOpenGLShaderProgram>
 
 #include <memory>
@@ -50,7 +52,8 @@ public:
 	Lighting(std::shared_ptr<QOpenGLShaderProgram> program);
 	~Lighting() = default;
 
-	void render(const Camera & camera);
+	void render(const Camera & camera, const QOpenGLContext & context,
+				GLuint posTexId, GLuint normalTexId, GLuint colorTexId);
 
 	static Lights defaultLights();
 	Lights lights_ = defaultLights();
@@ -60,4 +63,6 @@ private:
 
 	UniformLocType<Lights> lightsUniform_;
 	UniformLocType<QVector3D> viewPosUniform_;
+
+	Quad quad;
 };

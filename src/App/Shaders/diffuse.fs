@@ -38,20 +38,14 @@ struct Lights
 	SpotLight spotLight;
 };
 
-struct FallbackTexture
-{
-	vec3 color;
-	bool use;
-};
-
-uniform sampler2D tex_2d;
 uniform Lights lights;
 uniform vec3 viewPos;
-uniform FallbackTexture fallbackTexture;
 
-in vec3 vert_pos;
-in vec3 vert_norm;
-in vec2 vert_tex;
+uniform sampler2D posTexture;
+uniform sampler2D normalTexture;
+uniform sampler2D colorTexture;
+
+in vec2 vertTex;
 
 out vec4 out_col;
 
@@ -72,17 +66,17 @@ mat3 dirLightColor(DirectionalLight light, vec3 norm, vec3 viewDir) {
 	return phongLighting(norm, viewDir, light.light, normalize(-light.direction));
 }
 
-mat3 pointLightColor(PointLight light, vec3 norm, vec3 viewDir) {
-	vec3 lightDir = light.position - vert_pos;
+mat3 pointLightColor(PointLight light, vec3 norm, vec3 viewDir, vec3 vertPos) {
+	vec3 lightDir = light.position - vertPos;
 	float dist = length(lightDir);
 	mat3 phong_colors = phongLighting(norm, viewDir, light.light, normalize(lightDir));
 	float attenuation = 1 + light.linear * dist + light.quadratic * (dist * dist);
 	return phong_colors / attenuation;
 }
 
-mat3 spotLightColor(SpotLight light, vec3 norm, vec3 viewDir) {
-	mat3 phong_colors = pointLightColor(light.bulb, norm, viewDir);
-	float theta = dot(normalize(light.bulb.position - vert_pos), normalize(-light.direction));
+mat3 spotLightColor(SpotLight light, vec3 norm, vec3 viewDir, vec3 vertPos) {
+	mat3 phong_colors = pointLightColor(light.bulb, norm, viewDir, vertPos);
+	float theta = dot(normalize(light.bulb.position - vertPos), normalize(-light.direction));
 	float epsilon = (light.cutOff - light.outerCutOff);
 	float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 	phong_colors[1] *= intensity;
@@ -91,17 +85,16 @@ mat3 spotLightColor(SpotLight light, vec3 norm, vec3 viewDir) {
 }
 
 void main() {
-	vec3 norm = normalize(vert_norm);
-	vec3 viewDir = normalize(viewPos - vert_pos);
+	vec3 vertPos = texture(posTexture, vertTex).xyz;
+	vec3 norm = texture(normalTexture, vertTex).xyz;
+	vec3 viewDir = normalize(viewPos - vertPos);
 
 	mat3 lightColors = dirLightColor(lights.dirLight, norm, viewDir);
-	lightColors += pointLightColor(lights.pointLight, norm, viewDir);
-	lightColors += spotLightColor(lights.spotLight, norm, viewDir);
+	lightColors += pointLightColor(lights.pointLight, norm, viewDir, vertPos);
+	lightColors += spotLightColor(lights.spotLight, norm, viewDir, vertPos);
 	vec3 lightColor = lightColors[0] + lightColors[1] + lightColors[2];
 
-	vec4 texColor = fallbackTexture.use
-					? vec4(fallbackTexture.color, 0.0)
-					: texture(tex_2d, vert_tex);
+	vec4 texColor = texture(colorTexture, vertTex).rgba;
 	vec3 result = lightColor * texColor.rgb;
 	out_col = vec4(result, texColor.a);
 }

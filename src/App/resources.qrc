@@ -6,7 +6,9 @@
         <file>Models/WaterBottle.glb</file>
     </qresource>
     <qresource prefix="/">
+        <file>Shaders/model.vs</file>
+        <file>Shaders/model.fs</file>
+        <file>Shaders/noop.vs</file>
         <file>Shaders/diffuse.fs</file>
-        <file>Shaders/diffuse.vs</file>
     </qresource>
 </RCC>

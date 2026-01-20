@@ -1,5 +1,5 @@
-#include "Camera.h"
 #include "Lighting.h"
+#include <QOpenGLFunctions>
 #include <QtMath>
 #include <QVector3D>
 
@@ -46,17 +46,29 @@ Lights Lighting::defaultLights() {
 
 Lighting::Lighting(std::shared_ptr<QOpenGLShaderProgram> program)
 	: shaderProgram_(program)
+	, quad(program)
 {
 	program->bind();
 	lightsUniform_ = bindUniform<Lights>(program, "lights");
 	viewPosUniform_ = bindUniform<QVector3D>(program, "viewPos");
+	program->setUniformValue("posTexture", 0);
+	program->setUniformValue("normalTexture", 1);
+	program->setUniformValue("colorTexture", 2);
 	program->release();
 }
 
-void Lighting::render(const Camera & camera)
+void Lighting::render(const Camera & camera, const QOpenGLContext & context,
+					  GLuint posTexId, GLuint normalTexId, GLuint colorTexId)
 {
 	shaderProgram_->bind();
 	setUniformValue(shaderProgram_, lightsUniform_, lights_);
 	setUniformValue(shaderProgram_, viewPosUniform_, camera.getPosition());
+	context.functions()->glActiveTexture(GL_TEXTURE0);
+	context.functions()->glBindTexture(GL_TEXTURE_2D, posTexId);
+	context.functions()->glActiveTexture(GL_TEXTURE1);
+	context.functions()->glBindTexture(GL_TEXTURE_2D, normalTexId);
+	context.functions()->glActiveTexture(GL_TEXTURE2);
+	context.functions()->glBindTexture(GL_TEXTURE_2D, colorTexId);
+	quad.render(context);
 	shaderProgram_->release();
 }

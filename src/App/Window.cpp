@@ -3,6 +3,7 @@
 
 #include <QMouseEvent>
 #include <QLabel>
+#include <QOpenGLExtraFunctions>
 #include <QOpenGLShaderProgram>
 #include <QVBoxLayout>
 #include <QScreen>
@@ -10,6 +11,20 @@
 #include <cmath>
 
 using namespace window_internals;
+
+namespace
+{
+	auto createShader(QObject * owner, const QString & vertexShaderPath,
+					  const QString & fragShaderPath)
+	{
+		auto program = std::make_unique<QOpenGLShaderProgram>(owner);
+		check(!!program);
+		check(program->addShaderFromSourceFile(QOpenGLShader::Vertex, vertexShaderPath));
+		check(program->addShaderFromSourceFile(QOpenGLShader::Fragment, fragShaderPath));
+		check(program->link());
+		return program;
+	}
+} // namespace
 
 Window::Window() noexcept
 	: cameraId_(DEFAULT), settingsUi_(initSettingsUi())
@@ -46,7 +61,8 @@ Window::~Window()
 		model_.reset();
 		lighting_.reset();
 		camera_.reset();
-		program_.reset();
+		modelProgram_.reset();
+		lightningProgram_.reset();
 		settingsUi_.reset();
 	}
 }
@@ -54,11 +70,7 @@ Window::~Window()
 void Window::onInit()
 {
 	// Configure shaders
-	program_ = std::make_unique<QOpenGLShaderProgram>(this);
-	check(!!program_);
-	check(program_->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/diffuse.vs"));
-	check(program_->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/diffuse.fs"));
-	check(program_->link());
+	modelProgram_ = createShader(this, ":/Shaders/model.vs", ":/Shaders/model.fs");
 
 	camera_ = std::make_unique<Camera>();
 	camera_->setPosition(QVector3D(-1.0f, 2.0f, 0.0f));
@@ -67,10 +79,13 @@ void Window::onInit()
 	camera_->setMoveSpeed(25.0f);
 	camera_->setMouseSensitivity(0.1f);
 
-	lighting_ = std::make_unique<Lighting>(program_);
+	lightningProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/diffuse.fs");
+	lighting_ = std::make_unique<Lighting>(lightningProgram_);
 
-	model_ = std::make_unique<Model>(program_);
+	model_ = std::make_unique<Model>(modelProgram_);
 	reloadModel();
+
+	createFBOs(rect().size());
 
 	// Еnable depth test and face culling
 	glEnable(GL_DEPTH_TEST);
@@ -78,6 +93,27 @@ void Window::onInit()
 
 	// Clear all FBO buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void Window::createFBOs(const QSize & size)
+{
+	auto changeTexture = [&size, this](GLuint texId, GLint internalformat, GLenum format, GLenum type) {
+		glBindTexture(GL_TEXTURE_2D, texId);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalformat, size.width(), size.height(), 0, format, type, NULL);
+	};
+
+	gBuffer_.reset();
+	gBuffer_ = std::make_unique<QOpenGLFramebufferObject>(size, QOpenGLFramebufferObject::Depth);
+	gBuffer_->addColorAttachment(size);
+	gBuffer_->addColorAttachment(size);
+	auto textures = gBuffer_->textures();
+	changeTexture(textures[0], GL_RGB16F, GL_RGB, GL_FLOAT);
+	changeTexture(textures[1], GL_RGB16F, GL_RGB, GL_FLOAT);
+	changeTexture(textures[2], GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	check(gBuffer_->isValid());
+	GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	context()->extraFunctions()->glDrawBuffers(3, bufs);
 }
 
 void Window::reloadModel()
@@ -144,10 +180,6 @@ void Window::onRender()
 	processInput();
 	syncLightCamera();
 
-	// Clear buffers
-	glClearColor(0.2, 0.2, 0.2, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	if (modelIndexChanged_) {
 		modelIndexChanged_ = false;
 		reloadModel();
@@ -155,8 +187,16 @@ void Window::onRender()
 
 	const auto& camera = *camera_;
 	const auto& glContext = *context();
-	lighting_->render(camera);
+
+	check(gBuffer_->bind());
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	model_->render(camera, glContext);
+	check(gBuffer_->bindDefault());
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	auto textures = gBuffer_->textures();
+	lighting_->render(camera, glContext, textures[0], textures[1], textures[2]);
 
 	++frameCount_;
 
@@ -177,6 +217,8 @@ void Window::onResize(const size_t width, const size_t height)
 	const auto zFar = 100.0f;
 	const auto fov = 60.0f;
 	camera_->setPerspective(fov, aspect, zNear, zFar);
+
+	createFBOs(rect().size());
 }
 
 void Window::processInput()

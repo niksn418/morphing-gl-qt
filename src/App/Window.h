@@ -7,6 +7,7 @@
 
 #include <QElapsedTimer>
 #include <QGroupBox>
+#include <QOpenGLFramebufferObject>
 #include <QOpenGLShaderProgram>
 
 #include <array>
@@ -77,6 +78,7 @@ private:
 	void reloadModel();
 	void switchLightCamera();
 	void syncLightCamera();
+	void createFBOs(const QSize & size);
 
 	QLayout * createSlider(int min, int max, int defaultValue, auto slot, auto valueFormat);
 	QLayout * createIntSlider(int min, int max, int defaultValue, auto slot);
@@ -91,7 +93,9 @@ signals:
 	void updateUI();
 
 private:
-	std::shared_ptr<QOpenGLShaderProgram> program_;
+	std::shared_ptr<QOpenGLShaderProgram> modelProgram_;
+	std::shared_ptr<QOpenGLShaderProgram> lightningProgram_;
+	std::unique_ptr<QOpenGLFramebufferObject> gBuffer_;
 	std::unique_ptr<Camera> camera_;
 	std::unique_ptr<Lighting> lighting_;
 	std::unique_ptr<Model> model_;
