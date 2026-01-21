@@ -286,13 +286,22 @@ QGroupBox * Window::initSSAOSettingsUi()
 	});
 	settingsLayout->addLayout(ssaoOptionLayout);
 
+	auto tweaksLayout = new QHBoxLayout();
 	auto useHemisphere = new QCheckBox("Hemisphere Kernel");
 	useHemisphere->setTristate(false);
 	useHemisphere->setChecked(true);
 	connect(useHemisphere, &QCheckBox::stateChanged, this, [this](int state) {
 		ssao_->useHemisphere(state);
 	});
-	settingsLayout->addWidget(useHemisphere);
+	tweaksLayout->addWidget(useHemisphere);
+	auto useBlur = new QCheckBox("Blur");
+	useBlur->setTristate(false);
+	useBlur->setChecked(true);
+	connect(useBlur, &QCheckBox::stateChanged, this, [this](int state) {
+		useSSAOBlur_ = state;
+	});
+	tweaksLayout->addWidget(useBlur);
+	settingsLayout->addLayout(tweaksLayout);
 
 	auto slidersLayout = new QFormLayout();
 	slidersLayout->addRow("Samples", createIntSlider(

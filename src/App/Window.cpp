@@ -60,14 +60,17 @@ Window::~Window()
 		const auto guard = bindContext();
 		model_.reset();
 		ssao_.reset();
+		ssaoBlur_.reset();
 		lighting_.reset();
 		camera_.reset();
 		modelProgram_.reset();
 		ssaoProgram_.reset();
+		ssaoBlurProgram_.reset();
 		lightningProgram_.reset();
 		settingsUi_.reset();
 		gBuffer_.reset();
 		ssaoBuffer_.reset();
+		ssaoBlurBuffer_.reset();
 	}
 }
 
@@ -85,6 +88,9 @@ void Window::onInit()
 
 	ssaoProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/ssao.fs");
 	ssao_ = std::make_unique<SSAO>(ssaoProgram_, *context());
+
+	ssaoBlurProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/blur.fs");
+	ssaoBlur_ = std::make_unique<SSAOBlur>(ssaoBlurProgram_);
 
 	lightningProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/diffuse.fs");
 	lighting_ = std::make_unique<Lighting>(lightningProgram_);
@@ -127,6 +133,12 @@ void Window::createFBOs(const QSize & size)
 	changeTexture(ssaoBuffer_->texture(), GL_RED, GL_RED, GL_FLOAT);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	check(ssaoBuffer_->isValid());
+
+	ssaoBlurBuffer_.reset();
+	ssaoBlurBuffer_ = std::make_unique<QOpenGLFramebufferObject>(size);
+	changeTexture(ssaoBlurBuffer_->texture(), GL_RED, GL_RED, GL_FLOAT);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	check(ssaoBlurBuffer_->isValid());
 }
 
 void Window::reloadModel()
@@ -217,6 +229,16 @@ void Window::onRender()
 		check(ssaoBuffer_->bindDefault());
 
 		ssaoTexture = ssaoBuffer_->texture();
+
+		if (useSSAOBlur_)
+		{
+			check(ssaoBlurBuffer_->bind());
+			glClear(GL_COLOR_BUFFER_BIT);
+			ssaoBlur_->render(glContext, ssaoTexture.value());
+			check(ssaoBlurBuffer_->bindDefault());
+
+			ssaoTexture = ssaoBlurBuffer_->texture();
+		}
 	}
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

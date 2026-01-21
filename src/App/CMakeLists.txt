@@ -20,6 +20,7 @@ set(SRCS
     Shaders/model.fs
     Shaders/noop.vs
     Shaders/ssao.fs
+    Shaders/blur.fs
     Shaders/diffuse.fs
 )
 

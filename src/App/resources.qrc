@@ -10,6 +10,7 @@
         <file>Shaders/model.fs</file>
         <file>Shaders/noop.vs</file>
         <file>Shaders/ssao.fs</file>
+        <file>Shaders/blur.fs</file>
         <file>Shaders/diffuse.fs</file>
     </qresource>
 </RCC>

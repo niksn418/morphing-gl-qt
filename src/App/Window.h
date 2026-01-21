@@ -103,14 +103,17 @@ signals:
 private:
 	std::shared_ptr<QOpenGLShaderProgram> modelProgram_;
 	std::shared_ptr<QOpenGLShaderProgram> ssaoProgram_;
+	std::shared_ptr<QOpenGLShaderProgram> ssaoBlurProgram_;
 	std::shared_ptr<QOpenGLShaderProgram> lightningProgram_;
 
 	std::unique_ptr<QOpenGLFramebufferObject> gBuffer_;
 	std::unique_ptr<QOpenGLFramebufferObject> ssaoBuffer_;
+	std::unique_ptr<QOpenGLFramebufferObject> ssaoBlurBuffer_;
 
 	std::unique_ptr<Camera> camera_;
 	std::unique_ptr<Lighting> lighting_;
 	std::unique_ptr<SSAO> ssao_;
+	std::unique_ptr<SSAOBlur> ssaoBlur_;
 	std::unique_ptr<Model> model_;
 	std::unique_ptr<Camera> cameraBackup_{};
 
@@ -120,6 +123,7 @@ private:
 	bool modelIndexChanged_ = false;
 	unsigned int cameraId_;
 	unsigned int ssaoState_ = window_internals::ssao_state::ENABLED;
+	unsigned int useSSAOBlur_ = true;
 
 	QSet<int> pressedKeys_;
 	QElapsedTimer deltaTimer_;

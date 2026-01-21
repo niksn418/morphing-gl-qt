@@ -60,3 +60,14 @@ private:
     bool hemisphere_ = true;
 	Quad quad_;
 };
+
+class SSAOBlur
+{
+public:
+    SSAOBlur(std::shared_ptr<QOpenGLShaderProgram> program);
+    void render(const QOpenGLContext & context, GLuint ssaoTexId);
+
+private:
+    const std::shared_ptr<QOpenGLShaderProgram> shaderProgram_;
+	Quad quad_;
+};

@@ -124,3 +124,21 @@ void SSAO::setSamplesNum(unsigned int n)
     }
     kernel_.size = n;
 }
+
+SSAOBlur::SSAOBlur(std::shared_ptr<QOpenGLShaderProgram> program)
+    : shaderProgram_(program)
+    , quad_(program)
+{
+    program->bind();
+	program->setUniformValue("ssaoTexture", 0);
+	program->release();
+}
+
+void SSAOBlur::render(const QOpenGLContext & context, GLuint ssaoTexId)
+{
+    shaderProgram_->bind();
+	context.functions()->glActiveTexture(GL_TEXTURE0);
+	context.functions()->glBindTexture(GL_TEXTURE_2D, ssaoTexId);
+	quad_.render(context);
+	shaderProgram_->release();
+}
