@@ -84,7 +84,7 @@ void Window::onInit()
 	camera_->setMouseSensitivity(0.1f);
 
 	ssaoProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/ssao.fs");
-	ssao_ = std::make_unique<SSAO>(ssaoProgram_);
+	ssao_ = std::make_unique<SSAO>(ssaoProgram_, *context());
 
 	lightningProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/diffuse.fs");
 	lighting_ = std::make_unique<Lighting>(lightningProgram_);
@@ -213,7 +213,7 @@ void Window::onRender()
 	{
 		check(ssaoBuffer_->bind());
 		glClear(GL_COLOR_BUFFER_BIT);
-		ssao_->render(camera, glContext, textures[0]);
+		ssao_->render(camera, glContext, textures[0], textures[1]);
 		check(ssaoBuffer_->bindDefault());
 
 		ssaoTexture = ssaoBuffer_->texture();

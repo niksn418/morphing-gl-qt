@@ -286,6 +286,14 @@ QGroupBox * Window::initSSAOSettingsUi()
 	});
 	settingsLayout->addLayout(ssaoOptionLayout);
 
+	auto useHemisphere = new QCheckBox("Hemisphere Kernel");
+	useHemisphere->setTristate(false);
+	useHemisphere->setChecked(true);
+	connect(useHemisphere, &QCheckBox::stateChanged, this, [this](int state) {
+		ssao_->useHemisphere(state);
+	});
+	settingsLayout->addWidget(useHemisphere);
+
 	auto slidersLayout = new QFormLayout();
 	slidersLayout->addRow("Samples", createIntSlider(
 		1, MAX_SSAO_SAMPLES, MAX_SSAO_SAMPLES,

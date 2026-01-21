@@ -8,6 +8,37 @@ namespace
     {
         return a + t * (b - a);
     }
+
+    auto genNoise()
+    {
+        std::uniform_real_distribution<float> rnd(0.f, 1.f);
+        std::default_random_engine gen(42);
+        std::array<std::array<float, 3>, 16> noise;
+        for (unsigned int i = 0; i < 16; i++)
+        {
+            QVector3D vec(2.f * rnd(gen) - 1.f, 2.f * rnd(gen) - 1.f, 0.f);
+            vec.normalize();
+            noise[i][0] = vec.x();
+            noise[i][1] = vec.y();
+            noise[i][2] = vec.z();
+        }
+        return noise;
+    }
+
+    GLuint createNoiseTexture(const QOpenGLContext & context)
+    {
+        GLuint noiseTexture;
+        auto noise = genNoise();
+        context.functions()->glGenTextures(1, &noiseTexture);
+        context.functions()->glBindTexture(GL_TEXTURE_2D, noiseTexture);
+        context.functions()->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 4, 4,
+                                          0, GL_RGB, GL_FLOAT, &noise[0]);
+        context.functions()->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        context.functions()->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        context.functions()->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        context.functions()->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        return noiseTexture;
+    }
 } // namespace
 
 template <>
@@ -37,29 +68,37 @@ void setUniformValue<SSAOKernel>(std::shared_ptr<QOpenGLShaderProgram> shaderPro
 	}
 }
 
-SSAO::SSAO(std::shared_ptr<QOpenGLShaderProgram> program)
+SSAO::SSAO(std::shared_ptr<QOpenGLShaderProgram> program, const QOpenGLContext & context)
     : shaderProgram_(program)
+    , noise_(createNoiseTexture(context))
     , quad_(program)
 {
     setSamplesNum(MAX_SSAO_SAMPLES);
     program->bind();
 	paramsUniform_ = bindUniform<SSAOParams>(program, "params");
 	program->setUniformValue("posTexture", 0);
+    program->setUniformValue("normalTexture", 1);
+    program->setUniformValue("noiseTexture", 2);
 	program->release();
 }
 
 void SSAO::render(const Camera & camera, const QOpenGLContext & context,
-             GLuint posTexId)
+                  GLuint posTexId, GLuint normTexId)
 {
     shaderProgram_->bind();
 	setUniformValue(shaderProgram_, paramsUniform_, SSAOParams {
         .kernel = kernel_,
         .view = camera.getViewMatrix(),
         .projection = camera.getProjectionMatrix(),
+        .hemisphere = hemisphere_,
         .radius = radius_
     });
 	context.functions()->glActiveTexture(GL_TEXTURE0);
 	context.functions()->glBindTexture(GL_TEXTURE_2D, posTexId);
+    context.functions()->glActiveTexture(GL_TEXTURE1);
+	context.functions()->glBindTexture(GL_TEXTURE_2D, normTexId);
+    context.functions()->glActiveTexture(GL_TEXTURE2);
+	context.functions()->glBindTexture(GL_TEXTURE_2D, noise_);
 	quad_.render(context);
 	shaderProgram_->release();
 }

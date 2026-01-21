@@ -34,25 +34,29 @@ void setUniformValue<SSAOKernel>(std::shared_ptr<QOpenGLShaderProgram> shaderPro
 	FIELD(SSAOKernel, kernel)       \
 	FIELD(QMatrix4x4, view)         \
 	FIELD(QMatrix4x4, projection)   \
+    FIELD(bool, hemisphere)         \
 	FIELD(float, radius)
 define_uniform_struct(SSAOParams, SSAO_FIELDS)
 
 class SSAO
 {
 public:
-    SSAO(std::shared_ptr<QOpenGLShaderProgram> program);
+    SSAO(std::shared_ptr<QOpenGLShaderProgram> program, const QOpenGLContext & context);
     void render(const Camera & camera, const QOpenGLContext & context,
-                GLuint posTexId);
+                GLuint posTexId, GLuint normTexId);
 
     void setSamplesNum(unsigned int n);
     void setRadius(float radius) { radius_ = radius; }
+    void useHemisphere(bool use) { hemisphere_ = use; }
 
 private:
     const std::shared_ptr<QOpenGLShaderProgram> shaderProgram_;
+    const GLuint noise_;
 
     UniformLocType<SSAOParams> paramsUniform_;
 
     SSAOKernel kernel_;
     float radius_ = 1.f;
+    bool hemisphere_ = true;
 	Quad quad_;
 };
