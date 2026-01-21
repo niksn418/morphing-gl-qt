@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "Lighting.h"
 #include "Model.h"
+#include "SSAO.h"
 #include <Base/GLWidget.hpp>
 
 #include <QElapsedTimer>
@@ -33,6 +34,12 @@ namespace window_internals
 		POINT_LIGHT,
 		SPOTLIGHT,
 		DEFAULT,
+	};
+
+	enum ssao_state {
+		DISABLED,
+		ENABLED,
+		ONLY,
 	};
 } // namespace window_internals
 
@@ -88,16 +95,22 @@ private:
 	QGroupBox * initModelSettingsUi();
 	QGroupBox * initLightingSettingsUi();
 	QGroupBox * initLightingParamsUi();
+	QGroupBox * initSSAOSettingsUi();
 
 signals:
 	void updateUI();
 
 private:
 	std::shared_ptr<QOpenGLShaderProgram> modelProgram_;
+	std::shared_ptr<QOpenGLShaderProgram> ssaoProgram_;
 	std::shared_ptr<QOpenGLShaderProgram> lightningProgram_;
+
 	std::unique_ptr<QOpenGLFramebufferObject> gBuffer_;
+	std::unique_ptr<QOpenGLFramebufferObject> ssaoBuffer_;
+
 	std::unique_ptr<Camera> camera_;
 	std::unique_ptr<Lighting> lighting_;
+	std::unique_ptr<SSAO> ssao_;
 	std::unique_ptr<Model> model_;
 	std::unique_ptr<Camera> cameraBackup_{};
 
@@ -106,6 +119,7 @@ private:
 	unsigned int modelIndex_ = 1;
 	bool modelIndexChanged_ = false;
 	unsigned int cameraId_;
+	unsigned int ssaoState_ = window_internals::ssao_state::ENABLED;
 
 	QSet<int> pressedKeys_;
 	QElapsedTimer deltaTimer_;

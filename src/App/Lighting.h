@@ -5,6 +5,7 @@
 #include <QOpenGLShaderProgram>
 
 #include <memory>
+#include <optional>
 
 #include "uniform_types.h"
 
@@ -53,7 +54,8 @@ public:
 	~Lighting() = default;
 
 	void render(const Camera & camera, const QOpenGLContext & context,
-				GLuint posTexId, GLuint normalTexId, GLuint colorTexId);
+				GLuint posTexId, GLuint normalTexId, GLuint colorTexId,
+				std::optional<GLuint> ssaoTexId);
 
 	static Lights defaultLights();
 	Lights lights_ = defaultLights();
@@ -63,6 +65,7 @@ private:
 
 	UniformLocType<Lights> lightsUniform_;
 	UniformLocType<QVector3D> viewPosUniform_;
+	UniformLocType<bool> ssaoUniform_;
 
-	Quad quad;
+	Quad quad_;
 };

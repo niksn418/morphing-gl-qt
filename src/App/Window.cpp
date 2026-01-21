@@ -59,11 +59,15 @@ Window::~Window()
 		// Free resources with context bounded.
 		const auto guard = bindContext();
 		model_.reset();
+		ssao_.reset();
 		lighting_.reset();
 		camera_.reset();
 		modelProgram_.reset();
+		ssaoProgram_.reset();
 		lightningProgram_.reset();
 		settingsUi_.reset();
+		gBuffer_.reset();
+		ssaoBuffer_.reset();
 	}
 }
 
@@ -78,6 +82,9 @@ void Window::onInit()
 	camera_->setPitch(-30.0f);
 	camera_->setMoveSpeed(25.0f);
 	camera_->setMouseSensitivity(0.1f);
+
+	ssaoProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/ssao.fs");
+	ssao_ = std::make_unique<SSAO>(ssaoProgram_);
 
 	lightningProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/diffuse.fs");
 	lighting_ = std::make_unique<Lighting>(lightningProgram_);
@@ -114,6 +121,12 @@ void Window::createFBOs(const QSize & size)
 	check(gBuffer_->isValid());
 	GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
 	context()->extraFunctions()->glDrawBuffers(3, bufs);
+
+	ssaoBuffer_.reset();
+	ssaoBuffer_ = std::make_unique<QOpenGLFramebufferObject>(size);
+	changeTexture(ssaoBuffer_->texture(), GL_RED, GL_RED, GL_FLOAT);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	check(ssaoBuffer_->isValid());
 }
 
 void Window::reloadModel()
@@ -193,11 +206,27 @@ void Window::onRender()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	model_->render(camera, glContext);
 	check(gBuffer_->bindDefault());
+	auto textures = gBuffer_->textures();
+
+	std::optional<GLuint> ssaoTexture;
+	if (ssaoState_ != ssao_state::DISABLED)
+	{
+		check(ssaoBuffer_->bind());
+		glClear(GL_COLOR_BUFFER_BIT);
+		ssao_->render(camera, glContext, textures[0]);
+		check(ssaoBuffer_->bindDefault());
+
+		ssaoTexture = ssaoBuffer_->texture();
+	}
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	auto textures = gBuffer_->textures();
-	lighting_->render(camera, glContext, textures[0], textures[1], textures[2]);
-
+	if (ssaoState_ != ssao_state::ONLY)
+	{
+		lighting_->render(camera, glContext,
+						textures[0], textures[1], textures[2], ssaoTexture);
+	} else {
+		QOpenGLFramebufferObject::blitFramebuffer(0, ssaoBuffer_.get());
+	}
 	++frameCount_;
 
 	// Request redraw if animated

@@ -267,6 +267,47 @@ QGroupBox * Window::initLightingSettingsUi()
 	return lightSettings;
 }
 
+QGroupBox * Window::initSSAOSettingsUi()
+{
+	auto settings = new QGroupBox("SSAO Settings:");
+	auto settingsLayout = new QHBoxLayout();
+
+	auto buttons = new QButtonGroup();
+	buttons->addButton(new QRadioButton("Disabled"), ssao_state::DISABLED);
+	buttons->addButton(new QRadioButton("Enabled"), ssao_state::ENABLED);
+	buttons->addButton(new QRadioButton("Only"), ssao_state::ONLY);
+	buttons->button(ssaoState_)->setChecked(true);
+	auto ssaoOptionLayout = new QVBoxLayout();
+	for (auto button: buttons->buttons())
+		ssaoOptionLayout->addWidget(button);
+	connect(buttons, &QButtonGroup::idToggled, this, [this](int id, bool enabled) {
+		if (!enabled) return;
+		ssaoState_ = id;
+	});
+	settingsLayout->addLayout(ssaoOptionLayout);
+
+	auto slidersLayout = new QFormLayout();
+	slidersLayout->addRow("Samples", createIntSlider(
+		1, MAX_SSAO_SAMPLES, MAX_SSAO_SAMPLES,
+		[this](int value) {
+			ssao_->setSamplesNum(value);
+		}
+	));
+	slidersLayout->addRow("Radius", createFloatSlider(
+		.1f, 2.f, 1.f, 0.05f,
+		[this](float value) {
+			ssao_->setRadius(value);
+		}
+	));
+	settingsLayout->addLayout(slidersLayout);
+
+	settings->setLayout(settingsLayout);
+	settings->setStyleSheet("font-size: 12pt;");
+	settings->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+	settings->setFixedHeight(settings->sizeHint().height());
+	return settings;
+}
+
 std::unique_ptr<QGroupBox> Window::initSettingsUi()
 {
 	auto settingsUi = std::make_unique<QGroupBox>("Settings", this);
@@ -284,6 +325,7 @@ std::unique_ptr<QGroupBox> Window::initSettingsUi()
 	auto settingsLayout = new QVBoxLayout();
 	settingsLayout->addWidget(initModelSettingsUi());
 	settingsLayout->addWidget(initLightingSettingsUi());
+	settingsLayout->addWidget(initSSAOSettingsUi());
 	settingsLayout->addStretch();
 	settingsUi->setLayout(settingsLayout);
 	return settingsUi;

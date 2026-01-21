@@ -40,10 +40,12 @@ struct Lights
 
 uniform Lights lights;
 uniform vec3 viewPos;
+uniform bool useSSAO;
 
 uniform sampler2D posTexture;
 uniform sampler2D normalTexture;
 uniform sampler2D colorTexture;
+uniform sampler2D ssaoTexture;
 
 in vec2 vertTex;
 
@@ -89,9 +91,12 @@ void main() {
 	vec3 norm = texture(normalTexture, vertTex).xyz;
 	vec3 viewDir = normalize(viewPos - vertPos);
 
+	float ambientOcclusion = useSSAO ? texture(ssaoTexture, vertTex).r : 1.0;
+
 	mat3 lightColors = dirLightColor(lights.dirLight, norm, viewDir);
 	lightColors += pointLightColor(lights.pointLight, norm, viewDir, vertPos);
 	lightColors += spotLightColor(lights.spotLight, norm, viewDir, vertPos);
+	lightColors[0] *= ambientOcclusion;
 	vec3 lightColor = lightColors[0] + lightColors[1] + lightColors[2];
 
 	vec4 texColor = texture(colorTexture, vertTex).rgba;

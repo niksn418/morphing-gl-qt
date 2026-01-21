@@ -11,12 +11,15 @@ set(SRCS
     Model.h
     Quad.cpp
     Quad.h
+    SSAO.cpp
+    SSAO.h
     uniform_types.h
     utils.h
 
     Shaders/model.vs
     Shaders/model.fs
     Shaders/noop.vs
+    Shaders/ssao.fs
     Shaders/diffuse.fs
 )
 
