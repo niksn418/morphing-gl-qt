@@ -12,8 +12,10 @@ struct SSAOParams {
     mat4 view;
     mat4 projection;
     bool hemisphere;
+    bool smoothCheck;
     float radius;
 };
+float bias = 0.025;
 
 uniform SSAOParams params;
 
@@ -53,8 +55,13 @@ void main() {
         offsetPos = (params.view * vec4(offsetPos, 1.0)).xyz;
 
         float sampleDepth = offsetPos.z;
-        if (abs(vertPos.z - sampleDepth) < params.radius)
-            occlusion += step(samplePos.z, sampleDepth);
+        if (params.smoothCheck) {
+            float rangeCheck = smoothstep(0.0, 1.0, params.radius / abs(vertPos.z - sampleDepth));
+            occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
+        } else {
+            if (abs(vertPos.z - sampleDepth) < params.radius)
+                occlusion += step(samplePos.z, sampleDepth);
+        }
     }
 
     occlusion = 1.0 - (occlusion / params.kernel.size);

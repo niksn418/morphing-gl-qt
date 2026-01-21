@@ -286,7 +286,7 @@ QGroupBox * Window::initSSAOSettingsUi()
 	});
 	settingsLayout->addLayout(ssaoOptionLayout);
 
-	auto tweaksLayout = new QHBoxLayout();
+	auto tweaksLayout = new QVBoxLayout();
 	auto useHemisphere = new QCheckBox("Hemisphere Kernel");
 	useHemisphere->setTristate(false);
 	useHemisphere->setChecked(true);
@@ -301,6 +301,13 @@ QGroupBox * Window::initSSAOSettingsUi()
 		useSSAOBlur_ = state;
 	});
 	tweaksLayout->addWidget(useBlur);
+	auto useSmoothCheck = new QCheckBox("Smooth Range Check");
+	useSmoothCheck->setTristate(false);
+	useSmoothCheck->setChecked(true);
+	connect(useSmoothCheck, &QCheckBox::stateChanged, this, [this](int state) {
+		ssao_->useSmoothCheck(state);
+	});
+	tweaksLayout->addWidget(useSmoothCheck);
 	settingsLayout->addLayout(tweaksLayout);
 
 	auto slidersLayout = new QFormLayout();

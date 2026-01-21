@@ -91,6 +91,7 @@ void SSAO::render(const Camera & camera, const QOpenGLContext & context,
         .view = camera.getViewMatrix(),
         .projection = camera.getProjectionMatrix(),
         .hemisphere = hemisphere_,
+        .smoothCheck = smoothCheck_,
         .radius = radius_
     });
 	context.functions()->glActiveTexture(GL_TEXTURE0);

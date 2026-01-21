@@ -35,6 +35,7 @@ void setUniformValue<SSAOKernel>(std::shared_ptr<QOpenGLShaderProgram> shaderPro
 	FIELD(QMatrix4x4, view)         \
 	FIELD(QMatrix4x4, projection)   \
     FIELD(bool, hemisphere)         \
+    FIELD(bool, smoothCheck)        \
 	FIELD(float, radius)
 define_uniform_struct(SSAOParams, SSAO_FIELDS)
 
@@ -48,6 +49,7 @@ public:
     void setSamplesNum(unsigned int n);
     void setRadius(float radius) { radius_ = radius; }
     void useHemisphere(bool use) { hemisphere_ = use; }
+    void useSmoothCheck(bool use) { smoothCheck_ = use; }
 
 private:
     const std::shared_ptr<QOpenGLShaderProgram> shaderProgram_;
@@ -58,6 +60,7 @@ private:
     SSAOKernel kernel_;
     float radius_ = 1.f;
     bool hemisphere_ = true;
+    bool smoothCheck_ = true;
 	Quad quad_;
 };
 
