@@ -77,7 +77,10 @@ private:
 	QVector3D rotation_{0.0f, 0.0f, 0.0f};
 	QVector3D scale_{1.0f, 1.0f, 1.0f};
 	float morphing_ = 0.f;
-	FallbackTexture fallbackTexture_{};
+	FallbackTexture fallbackTexture_{
+		.color={1.0f, 1.0f, 1.0f},
+		.use=false
+	};
 
 	mutable QMatrix4x4 transform_;
 	mutable bool transformDirty_ = true;

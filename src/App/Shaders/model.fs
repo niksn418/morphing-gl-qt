@@ -21,6 +21,6 @@ void main() {
     pos = vert_pos;
     normal = normalize(vert_norm);
     color = fallbackTexture.use
-            ? vec4(fallbackTexture.color, 0.0)
+            ? vec4(fallbackTexture.color, 1.0)
             : texture(tex_2d, vert_tex).rgba;
 }
