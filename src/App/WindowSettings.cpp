@@ -286,12 +286,14 @@ QGroupBox * Window::initSSAOSettingsUi()
 	});
 	settingsLayout->addLayout(ssaoOptionLayout);
 
+	auto defaultSettings = SSAO::defaultSettings();
+
 	auto tweaksLayout = new QVBoxLayout();
 	auto useHemisphere = new QCheckBox("Hemisphere Kernel");
 	useHemisphere->setTristate(false);
-	useHemisphere->setChecked(true);
+	useHemisphere->setChecked(defaultSettings.hemisphere);
 	connect(useHemisphere, &QCheckBox::stateChanged, this, [this](int state) {
-		ssao_->useHemisphere(state);
+		ssao_->settings.hemisphere = state;
 	});
 	tweaksLayout->addWidget(useHemisphere);
 	auto useBlur = new QCheckBox("Blur");
@@ -303,9 +305,9 @@ QGroupBox * Window::initSSAOSettingsUi()
 	tweaksLayout->addWidget(useBlur);
 	auto useSmoothCheck = new QCheckBox("Smooth Range Check");
 	useSmoothCheck->setTristate(false);
-	useSmoothCheck->setChecked(true);
+	useSmoothCheck->setChecked(defaultSettings.smoothCheck);
 	connect(useSmoothCheck, &QCheckBox::stateChanged, this, [this](int state) {
-		ssao_->useSmoothCheck(state);
+		ssao_->settings.smoothCheck = state;
 	});
 	tweaksLayout->addWidget(useSmoothCheck);
 	settingsLayout->addLayout(tweaksLayout);
@@ -317,10 +319,28 @@ QGroupBox * Window::initSSAOSettingsUi()
 			ssao_->setSamplesNum(value);
 		}
 	));
-	slidersLayout->addRow("Radius", createFloatSlider(
-		.1f, 2.f, 1.f, 0.05f,
+	slidersLayout->addRow("Sample Radius", createFloatSlider(
+		.1f, 2.f, defaultSettings.sampleRadius, 0.05f,
 		[this](float value) {
-			ssao_->setRadius(value);
+			ssao_->settings.sampleRadius = value;
+		}
+	));
+	slidersLayout->addRow("Kernel Radius", createFloatSlider(
+		.1f, 2.f, defaultSettings.kernelRadius, 0.05f,
+		[this](float value) {
+			ssao_->settings.kernelRadius = value;
+		}
+	));
+	slidersLayout->addRow("Bias", createFloatSlider(
+		0.f, 1.f, defaultSettings.bias, 0.005f,
+		[this](float value) {
+			ssao_->settings.bias = value;
+		}
+	));
+	slidersLayout->addRow("Power", createFloatSlider(
+		1.f, 4.f, defaultSettings.power, 0.1f,
+		[this](float value) {
+			ssao_->settings.power = value;
 		}
 	));
 	settingsLayout->addLayout(slidersLayout);

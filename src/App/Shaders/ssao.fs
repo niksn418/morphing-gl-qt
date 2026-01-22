@@ -7,15 +7,22 @@ struct SSAOKernel
     int size;
 };
 
+struct SSAOSettings
+{
+    bool hemisphere;
+    bool smoothCheck;
+    float bias;
+    float power;
+    float kernelRadius;
+    float sampleRadius;
+};
+
 struct SSAOParams {
     SSAOKernel kernel;
     mat4 view;
     mat4 projection;
-    bool hemisphere;
-    bool smoothCheck;
-    float radius;
+    SSAOSettings settings;
 };
-float bias = 0.025;
 
 uniform SSAOParams params;
 
@@ -38,7 +45,7 @@ void main() {
     vec3 vertPos = vec3(viewRay * -vertZ, vertZ);
 
     mat3 TBN = mat3(1.0);
-    if (params.hemisphere) {
+    if (params.settings.hemisphere) {
         vec3 normal = texture(normalTexture, vertTex).xyz;
         normal = normalize(mat3(params.view) * normal);
 
@@ -52,21 +59,24 @@ void main() {
 
     float occlusion = 0.0;
     for (int i = 0; i < params.kernel.size; ++i) {
-        vec3 samplePos = vertPos + TBN * params.kernel.samples[i];
+        vec3 samplePos = TBN * params.kernel.samples[i];
+        samplePos = vertPos + samplePos * params.settings.kernelRadius;
         vec4 offset = params.projection * vec4(samplePos, 1.0);
         offset.xy /= offset.w;
         offset.xy = offset.xy * 0.5 + vec2(0.5);
 
         float sampleDepth = calcViewZ(offset.xy);
-        if (params.smoothCheck) {
-            float rangeCheck = smoothstep(0.0, 1.0, params.radius / abs(vertPos.z - sampleDepth));
-            occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
+        if (params.settings.smoothCheck) {
+            float rangeCheck = smoothstep(0.0, 1.0,
+                                    params.settings.sampleRadius / abs(vertPos.z - sampleDepth));
+            occlusion += step(samplePos.z + params.settings.bias, sampleDepth) * rangeCheck;
         } else {
-            if (abs(vertPos.z - sampleDepth) < params.radius)
-                occlusion += step(samplePos.z, sampleDepth);
+            if (abs(vertPos.z - sampleDepth) < params.settings.sampleRadius)
+                occlusion += step(samplePos.z + params.settings.bias, sampleDepth);
         }
     }
 
     occlusion = 1.0 - (occlusion / params.kernel.size);
+    occlusion = pow(occlusion, params.settings.power);
     out_col = occlusion;
 }

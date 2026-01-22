@@ -29,14 +29,20 @@ void setUniformValue<SSAOKernel>(std::shared_ptr<QOpenGLShaderProgram> shaderPro
 							     const UniformLocType<SSAOKernel> & locs,
                                  const SSAOKernel & value);
 
+#define SSAO_SETTINGS_FIELDS(FIELD) \
+    FIELD(bool, hemisphere)         \
+    FIELD(bool, smoothCheck)        \
+    FIELD(float, bias)              \
+    FIELD(float, power)             \
+    FIELD(float, kernelRadius)      \
+	FIELD(float, sampleRadius)
+define_uniform_struct(SSAOSettings, SSAO_SETTINGS_FIELDS)
 
 #define SSAO_FIELDS(FIELD)          \
 	FIELD(SSAOKernel, kernel)       \
 	FIELD(QMatrix4x4, view)         \
 	FIELD(QMatrix4x4, projection)   \
-    FIELD(bool, hemisphere)         \
-    FIELD(bool, smoothCheck)        \
-	FIELD(float, radius)
+	FIELD(SSAOSettings, settings)
 define_uniform_struct(SSAOParams, SSAO_FIELDS)
 
 class SSAO
@@ -47,9 +53,9 @@ public:
                 GLuint posTexId, GLuint normTexId);
 
     void setSamplesNum(unsigned int n);
-    void setRadius(float radius) { radius_ = radius; }
-    void useHemisphere(bool use) { hemisphere_ = use; }
-    void useSmoothCheck(bool use) { smoothCheck_ = use; }
+
+    static SSAOSettings defaultSettings();
+	SSAOSettings settings = defaultSettings();
 
 private:
     const std::shared_ptr<QOpenGLShaderProgram> shaderProgram_;
@@ -60,7 +66,8 @@ private:
     UniformLocType<float> fovHalfTangentUniform_;
 
     SSAOKernel kernel_;
-    float radius_ = 1.f;
+    float kernelRadius_ = 1.f;
+    float sampleRadius_ = 1.f;
     bool hemisphere_ = true;
     bool smoothCheck_ = true;
 	Quad quad_;

@@ -8,12 +8,14 @@ Features:
 - Supports mouse and keyboard navigation;
     - Viewing via mouse requires `LMB` to be pressed;
     - Holding `Ctrl` decreases the moving speed;
+- Uses SSAO technique with depth reconstruction;
 - `Esc` key opens semi-transparent settings menu, which allows:
     - Choosing model
     - Enabling/Disabling use of model's texture and setting model color
     - Configuring model morphing to sphere
     - Changing colors and other parameters of each light source
-    - Moving each light source. To do this, choose it in `Move Light` settings section, then it will be controlled with the camera.
+    - Moving each light source. To do this, choose it in `Move Light` settings section, then it will be controlled with the camer;
+    - Enabling\disabling SSAO, changing several its parameters and displaying contents of AO buffer.
 
 ## Requirements
 

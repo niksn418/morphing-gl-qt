@@ -42,6 +42,18 @@ namespace
     }
 } // namespace
 
+SSAOSettings SSAO::defaultSettings()
+{
+    return SSAOSettings{
+        .hemisphere = true,
+        .smoothCheck = true,
+        .bias = 0.025,
+        .power = 1.0,
+        .kernelRadius = 1.0,
+        .sampleRadius = 1.0
+    };
+}
+
 template <>
 UniformLocType<SSAOKernel> bindUniform<SSAOKernel>(
                                     std::shared_ptr<QOpenGLShaderProgram> shaderProgram,
@@ -93,9 +105,7 @@ void SSAO::render(const Camera & camera, const QOpenGLContext & context,
         .kernel = kernel_,
         .view = camera.getViewMatrix(),
         .projection = camera.getProjectionMatrix(),
-        .hemisphere = hemisphere_,
-        .smoothCheck = smoothCheck_,
-        .radius = radius_
+        .settings = settings
     });
     setUniformValue(shaderProgram_, aspectRatioUniform_, camera.getAspectRatio());
     float fovHalfTan = qTan(qDegreesToRadians(camera.getFOV() / 2));
