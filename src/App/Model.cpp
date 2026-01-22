@@ -5,13 +5,19 @@
 #include <QOpenGLFunctions>
 #include <tinygltf/tiny_gltf.h>
 
-Model::Model(std::shared_ptr<QOpenGLShaderProgram> program)
-	: shaderProgram_(program)
+Model::Model(std::shared_ptr<QOpenGLShaderProgram> geomProgram, std::shared_ptr<QOpenGLShaderProgram> texProgram)
+	: geomShaderProgram_(std::move(geomProgram))
+	, texShaderProgram_(std::move(texProgram))
 {
-	program->bind();
-	modelUniform_ = bindUniform<ModelUniform>(program, "model");
-	fallbackTextureUniform_ = bindUniform<FallbackTexture>(program, "fallbackTexture");
-	program->release();
+	geomShaderProgram_->bind();
+	modelUniforms_.push_back(bindUniform<ModelUniform>(geomShaderProgram_, "model"));
+	geomShaderProgram_->release();
+
+	texShaderProgram_->bind();
+	modelUniforms_.push_back(bindUniform<ModelUniform>(texShaderProgram_, "model"));
+	fallbackTextureUniforms_.push_back(
+				bindUniform<FallbackTexture>(texShaderProgram_, "fallbackTexture"));
+	texShaderProgram_->release();
 }
 
 Model::~Model()
@@ -212,18 +218,21 @@ void Model::setupMeshBuffers()
 		ibo->setUsagePattern(QOpenGLBuffer::StaticDraw);
 		ibo->allocate(mesh.indices.data(), static_cast<int>(mesh.indices.size() * sizeof(uint32_t)));
 
-		shaderProgram_->bind();
+		for (auto & program: {geomShaderProgram_, texShaderProgram_})
+		{
+			program->bind();
 
-		shaderProgram_->enableAttributeArray(0);
-		shaderProgram_->setAttributeBuffer(0, GL_FLOAT, offsetof(Vertex, position), 3, sizeof(Vertex));
+			program->enableAttributeArray(0);
+			program->setAttributeBuffer(0, GL_FLOAT, offsetof(Vertex, position), 3, sizeof(Vertex));
 
-		shaderProgram_->enableAttributeArray(1);
-		shaderProgram_->setAttributeBuffer(1, GL_FLOAT, offsetof(Vertex, normal), 3, sizeof(Vertex));
+			program->enableAttributeArray(1);
+			program->setAttributeBuffer(1, GL_FLOAT, offsetof(Vertex, normal), 3, sizeof(Vertex));
 
-		shaderProgram_->enableAttributeArray(2);
-		shaderProgram_->setAttributeBuffer(2, GL_FLOAT, offsetof(Vertex, texCoord), 2, sizeof(Vertex));
+			program->enableAttributeArray(2);
+			program->setAttributeBuffer(2, GL_FLOAT, offsetof(Vertex, texCoord), 2, sizeof(Vertex));
 
-		shaderProgram_->release();
+			program->release();
+		}
 		vao->release();
 
 		vaos_.push_back(std::move(vao));
@@ -281,17 +290,20 @@ void Model::updateTransform() const
 	transform_.scale(scale_);
 }
 
-void Model::render(const Camera & camera, const QOpenGLContext & context)
+void Model::render(const Camera & camera, const QOpenGLContext & context, ShaderType shaderType)
 {
 	if (meshes_.empty())
 		return;
 
-	shaderProgram_->bind();
+	unsigned int shaderIndex = shaderType == ShaderType::TEXTURE;
+	auto& shaderProgram = (shaderType == ShaderType::GEOMETRY)
+							? geomShaderProgram_ : texShaderProgram_;
+	shaderProgram->bind();
 
 	const auto & transform = getTransform();
 	const auto mvp = camera.getViewProjectionMatrix() * transform;
 
-	setUniformValue(shaderProgram_, modelUniform_, ModelUniform {
+	setUniformValue(shaderProgram, modelUniforms_[shaderIndex], ModelUniform {
 		.mvp = mvp,
 		.transform = transform,
 		.normalMatrix = transform.normalMatrix(),
@@ -299,7 +311,8 @@ void Model::render(const Camera & camera, const QOpenGLContext & context)
 		.bBoxRadius = (bounding_box.max - bounding_box.min).length() / 2,
 		.morphing = morphing_,
 	});
-	setUniformValue(shaderProgram_, fallbackTextureUniform_, fallbackTexture_);
+	if (shaderType == ShaderType::TEXTURE)
+		setUniformValue(shaderProgram, fallbackTextureUniforms_[shaderIndex], fallbackTexture_);
 
 	for (size_t i = 0; i < meshes_.size(); ++i)
 	{
@@ -325,7 +338,7 @@ void Model::render(const Camera & camera, const QOpenGLContext & context)
 		}
 	}
 
-	shaderProgram_->release();
+	shaderProgram->release();
 }
 
 void Model::cleanupResources()

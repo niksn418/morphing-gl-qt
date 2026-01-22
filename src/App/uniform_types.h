@@ -12,7 +12,7 @@ static UniformLocType<T> bindUniform(std::shared_ptr<QOpenGLShaderProgram> shade
 	int index = shaderProgram->uniformLocation(varName);
 	if (index == -1)
 	{
-		qDebug() << "ERROR: could not get shader loc for" << varName << '\n';
+		qDebug() << "ERROR: could not get shader loc for" << varName;
 	}
 	return {index};
 }

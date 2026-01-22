@@ -19,17 +19,23 @@ float bias = 0.025;
 
 uniform SSAOParams params;
 
-uniform sampler2D posTexture;
+uniform sampler2D depthTexture;
 uniform sampler2D normalTexture;
 uniform sampler2D noiseTexture;
 
 in vec2 vertTex;
+in vec2 viewRay;
 
 out float out_col;
 
+float calcViewZ(vec2 texCoords) {
+    float depth = texture(depthTexture, texCoords).x;
+    return params.projection[3][2] / (1 - 2 * depth - params.projection[2][2]);
+}
+
 void main() {
-    vec3 vertPos = texture(posTexture, vertTex).xyz;
-    vertPos = (params.view * vec4(vertPos, 1.0)).xyz;
+    float vertZ = calcViewZ(vertTex);
+    vec3 vertPos = vec3(viewRay * -vertZ, vertZ);
 
     mat3 TBN = mat3(1.0);
     if (params.hemisphere) {
@@ -51,10 +57,7 @@ void main() {
         offset.xy /= offset.w;
         offset.xy = offset.xy * 0.5 + vec2(0.5);
 
-        vec3 offsetPos = texture(posTexture, offset.xy).xyz;
-        offsetPos = (params.view * vec4(offsetPos, 1.0)).xyz;
-
-        float sampleDepth = offsetPos.z;
+        float sampleDepth = calcViewZ(offset.xy);
         if (params.smoothCheck) {
             float rangeCheck = smoothstep(0.0, 1.0, params.radius / abs(vertPos.z - sampleDepth));
             occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;

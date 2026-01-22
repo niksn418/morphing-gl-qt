@@ -56,6 +56,8 @@ private:
     const GLuint noise_;
 
     UniformLocType<SSAOParams> paramsUniform_;
+    UniformLocType<float> aspectRatioUniform_;
+    UniformLocType<float> fovHalfTangentUniform_;
 
     SSAOKernel kernel_;
     float radius_ = 1.f;

@@ -40,12 +40,19 @@ define_uniform_struct(FallbackTexture, ModelTexture_FIELDS)
 class Model
 {
 public:
-	Model(std::shared_ptr<QOpenGLShaderProgram> program);
+	enum ShaderType
+	{
+		GEOMETRY,
+		TEXTURE,
+	};
+
+	Model(std::shared_ptr<QOpenGLShaderProgram> geomProgram,
+		  std::shared_ptr<QOpenGLShaderProgram> texProgram);
 	~Model();
 
 	bool loadFromGLTF(const QString & filePath);
 
-	void render(const Camera & camera, const QOpenGLContext & context);
+	void render(const Camera & camera, const QOpenGLContext & context, ShaderType shaderType);
 
 	const std::vector<Mesh> & getMeshes() const { return meshes_; }
 	bool isLoaded() const { return !meshes_.empty(); }
@@ -87,7 +94,8 @@ private:
 
 	bool visible_ = true;
 
-	const std::shared_ptr<QOpenGLShaderProgram> shaderProgram_;
+	const std::shared_ptr<QOpenGLShaderProgram> geomShaderProgram_;
+	const std::shared_ptr<QOpenGLShaderProgram> texShaderProgram_;
 	std::vector<std::unique_ptr<QOpenGLTexture>> textures_;
 	std::vector<Mesh> meshes_;
 	struct {
@@ -99,6 +107,6 @@ private:
 	std::vector<std::unique_ptr<QOpenGLBuffer>> ibos_;
 	std::vector<std::unique_ptr<QOpenGLVertexArrayObject>> vaos_;
 
-	UniformLocType<ModelUniform> modelUniform_;
-	UniformLocType<FallbackTexture> fallbackTextureUniform_;
+	std::vector<UniformLocType<ModelUniform>> modelUniforms_;
+	std::vector<UniformLocType<FallbackTexture>> fallbackTextureUniforms_;
 };

@@ -18,8 +18,9 @@ set(SRCS
 
     Shaders/model.vs
     Shaders/model.fs
-    Shaders/noop.vs
+    Shaders/ssao.vs
     Shaders/ssao.fs
+    Shaders/noop.vs
     Shaders/blur.fs
     Shaders/diffuse.fs
 )

@@ -15,9 +15,9 @@ struct ModelUniform {
 };
 uniform ModelUniform model;
 
-out vec3 vert_pos;
-out vec3 vert_norm;
-out vec2 vert_tex;
+out vec3 vertPos;
+out vec3 vertNorm;
+out vec2 vertTex;
 
 void main() {
 	vec3 v = pos - model.bBoxCenter;
@@ -30,8 +30,8 @@ void main() {
 		t
 	));
 
-	vert_pos = vec3(model.transform * vec4(morphedPos, 1.0));
-	vert_norm = model.normalMatrix * morphedNormal;
-	vert_tex = tex;
+	vertPos = vec3(model.transform * vec4(morphedPos, 1.0));
+	vertNorm = model.normalMatrix * morphedNormal;
+	vertTex = tex;
 	gl_Position = model.mvp * vec4(morphedPos, 1.0);
 }

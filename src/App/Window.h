@@ -106,7 +106,10 @@ private:
 	std::shared_ptr<QOpenGLShaderProgram> ssaoBlurProgram_;
 	std::shared_ptr<QOpenGLShaderProgram> lightningProgram_;
 
-	std::unique_ptr<QOpenGLFramebufferObject> gBuffer_;
+	GLuint gBuffer_ = 0;
+	GLuint normalTexture_ = 0;
+	GLuint depthTexture_ = 0;
+
 	std::unique_ptr<QOpenGLFramebufferObject> ssaoBuffer_;
 	std::unique_ptr<QOpenGLFramebufferObject> ssaoBlurBuffer_;
 

@@ -54,7 +54,6 @@ public:
 	~Lighting() = default;
 
 	void render(const Camera & camera, const QOpenGLContext & context,
-				GLuint posTexId, GLuint normalTexId, GLuint colorTexId,
 				std::optional<GLuint> ssaoTexId);
 
 	static Lights defaultLights();
@@ -66,6 +65,4 @@ private:
 	UniformLocType<Lights> lightsUniform_;
 	UniformLocType<QVector3D> viewPosUniform_;
 	UniformLocType<bool> ssaoUniform_;
-
-	Quad quad_;
 };

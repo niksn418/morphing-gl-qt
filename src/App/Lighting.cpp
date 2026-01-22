@@ -46,38 +46,26 @@ Lights Lighting::defaultLights() {
 
 Lighting::Lighting(std::shared_ptr<QOpenGLShaderProgram> program)
 	: shaderProgram_(program)
-	, quad_(program)
 {
 	program->bind();
 	lightsUniform_ = bindUniform<Lights>(program, "lights");
 	viewPosUniform_ = bindUniform<QVector3D>(program, "viewPos");
 	ssaoUniform_ = bindUniform<bool>(program, "useSSAO");
-	program->setUniformValue("posTexture", 0);
-	program->setUniformValue("normalTexture", 1);
-	program->setUniformValue("colorTexture", 2);
-	program->setUniformValue("ssaoTexture", 3);
+	program->setUniformValue("ssaoTexture", 1);
 	program->release();
 }
 
 void Lighting::render(const Camera & camera, const QOpenGLContext & context,
-					  GLuint posTexId, GLuint normalTexId, GLuint colorTexId,
 					  std::optional<GLuint> ssaoTexId)
 {
 	shaderProgram_->bind();
 	setUniformValue(shaderProgram_, lightsUniform_, lights_);
 	setUniformValue(shaderProgram_, viewPosUniform_, camera.getPosition());
 	setUniformValue(shaderProgram_, ssaoUniform_, ssaoTexId.has_value());
-	context.functions()->glActiveTexture(GL_TEXTURE0);
-	context.functions()->glBindTexture(GL_TEXTURE_2D, posTexId);
-	context.functions()->glActiveTexture(GL_TEXTURE1);
-	context.functions()->glBindTexture(GL_TEXTURE_2D, normalTexId);
-	context.functions()->glActiveTexture(GL_TEXTURE2);
-	context.functions()->glBindTexture(GL_TEXTURE_2D, colorTexId);
 	if (ssaoTexId.has_value())
 	{
-		context.functions()->glActiveTexture(GL_TEXTURE3);
+		context.functions()->glActiveTexture(GL_TEXTURE1);
 		context.functions()->glBindTexture(GL_TEXTURE_2D, ssaoTexId.value());
 	}
-	quad_.render(context);
 	shaderProgram_->release();
 }

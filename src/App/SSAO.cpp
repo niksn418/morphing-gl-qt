@@ -1,5 +1,6 @@
 #include "SSAO.h"
 #include <QOpenGLFunctions>
+#include <QtMath>
 #include <random>
 
 namespace
@@ -76,14 +77,16 @@ SSAO::SSAO(std::shared_ptr<QOpenGLShaderProgram> program, const QOpenGLContext &
     setSamplesNum(MAX_SSAO_SAMPLES);
     program->bind();
 	paramsUniform_ = bindUniform<SSAOParams>(program, "params");
-	program->setUniformValue("posTexture", 0);
+    aspectRatioUniform_ = bindUniform<float>(program, "aspectRatio");
+    fovHalfTangentUniform_ = bindUniform<float>(program, "fovHalfTangent");
+    program->setUniformValue("depthTexture", 0);
     program->setUniformValue("normalTexture", 1);
     program->setUniformValue("noiseTexture", 2);
 	program->release();
 }
 
 void SSAO::render(const Camera & camera, const QOpenGLContext & context,
-                  GLuint posTexId, GLuint normTexId)
+                  GLuint depthTexId, GLuint normTexId)
 {
     shaderProgram_->bind();
 	setUniformValue(shaderProgram_, paramsUniform_, SSAOParams {
@@ -94,8 +97,11 @@ void SSAO::render(const Camera & camera, const QOpenGLContext & context,
         .smoothCheck = smoothCheck_,
         .radius = radius_
     });
+    setUniformValue(shaderProgram_, aspectRatioUniform_, camera.getAspectRatio());
+    float fovHalfTan = qTan(qDegreesToRadians(camera.getFOV() / 2));
+    setUniformValue(shaderProgram_, fovHalfTangentUniform_, fovHalfTan);
 	context.functions()->glActiveTexture(GL_TEXTURE0);
-	context.functions()->glBindTexture(GL_TEXTURE_2D, posTexId);
+	context.functions()->glBindTexture(GL_TEXTURE_2D, depthTexId);
     context.functions()->glActiveTexture(GL_TEXTURE1);
 	context.functions()->glBindTexture(GL_TEXTURE_2D, normTexId);
     context.functions()->glActiveTexture(GL_TEXTURE2);

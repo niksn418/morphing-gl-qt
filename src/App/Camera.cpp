@@ -13,6 +13,8 @@ void Camera::setPerspective(float fov, float aspect, float nearPlane, float farP
 {
 	projection_.setToIdentity();
 	projection_.perspective(fov, aspect, nearPlane, farPlane);
+	fov_ = fov;
+	aspect_ = aspect;
 }
 
 void Camera::setOrthographic(float left, float right, float bottom, float top, float nearPlane, float farPlane)

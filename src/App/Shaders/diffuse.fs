@@ -38,15 +38,21 @@ struct Lights
 	SpotLight spotLight;
 };
 
+struct FallbackTexture
+{
+	vec3 color;
+	bool use;
+};
+
+uniform sampler2D tex_2d;
 uniform Lights lights;
 uniform vec3 viewPos;
+uniform FallbackTexture fallbackTexture;
 uniform bool useSSAO;
-
-uniform sampler2D posTexture;
-uniform sampler2D normalTexture;
-uniform sampler2D colorTexture;
 uniform sampler2D ssaoTexture;
 
+in vec3 vertPos;
+in vec3 vertNorm;
 in vec2 vertTex;
 
 out vec4 out_col;
@@ -87,11 +93,14 @@ mat3 spotLightColor(SpotLight light, vec3 norm, vec3 viewDir, vec3 vertPos) {
 }
 
 void main() {
-	vec3 vertPos = texture(posTexture, vertTex).xyz;
-	vec3 norm = texture(normalTexture, vertTex).xyz;
+	vec3 norm = normalize(vertNorm);
 	vec3 viewDir = normalize(viewPos - vertPos);
 
-	float ambientOcclusion = useSSAO ? texture(ssaoTexture, vertTex).r : 1.0;
+	float ambientOcclusion = 1.0;
+	if (useSSAO) {
+		vec2 pixelTex = gl_FragCoord.xy / textureSize(ssaoTexture, 0);
+		ambientOcclusion = texture(ssaoTexture, pixelTex).r;
+	}
 
 	mat3 lightColors = dirLightColor(lights.dirLight, norm, viewDir);
 	lightColors += pointLightColor(lights.pointLight, norm, viewDir, vertPos);
@@ -99,7 +108,9 @@ void main() {
 	lightColors[0] *= ambientOcclusion;
 	vec3 lightColor = lightColors[0] + lightColors[1] + lightColors[2];
 
-	vec4 texColor = texture(colorTexture, vertTex).rgba;
+	vec4 texColor = fallbackTexture.use
+					? vec4(fallbackTexture.color, 0.0)
+					: texture(tex_2d, vertTex);
 	vec3 result = lightColor * texColor.rgb;
 	out_col = vec4(result, texColor.a);
 }

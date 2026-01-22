@@ -68,7 +68,12 @@ Window::~Window()
 		ssaoBlurProgram_.reset();
 		lightningProgram_.reset();
 		settingsUi_.reset();
-		gBuffer_.reset();
+		if (gBuffer_ != 0)
+		{
+			glDeleteFramebuffers(1, &gBuffer_);
+			glDeleteTextures(1, &normalTexture_);
+			glDeleteTextures(1, &depthTexture_);
+		}
 		ssaoBuffer_.reset();
 		ssaoBlurBuffer_.reset();
 	}
@@ -86,16 +91,16 @@ void Window::onInit()
 	camera_->setMoveSpeed(25.0f);
 	camera_->setMouseSensitivity(0.1f);
 
-	ssaoProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/ssao.fs");
+	ssaoProgram_ = createShader(this, ":/Shaders/ssao.vs", ":/Shaders/ssao.fs");
 	ssao_ = std::make_unique<SSAO>(ssaoProgram_, *context());
 
 	ssaoBlurProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/blur.fs");
 	ssaoBlur_ = std::make_unique<SSAOBlur>(ssaoBlurProgram_);
 
-	lightningProgram_ = createShader(this, ":/Shaders/noop.vs", ":/Shaders/diffuse.fs");
+	lightningProgram_ = createShader(this, ":/Shaders/model.vs", ":/Shaders/diffuse.fs");
 	lighting_ = std::make_unique<Lighting>(lightningProgram_);
 
-	model_ = std::make_unique<Model>(modelProgram_);
+	model_ = std::make_unique<Model>(modelProgram_, lightningProgram_);
 	reloadModel();
 
 	createFBOs(rect().size());
@@ -113,20 +118,28 @@ void Window::createFBOs(const QSize & size)
 	auto changeTexture = [&size, this](GLuint texId, GLint internalformat, GLenum format, GLenum type) {
 		glBindTexture(GL_TEXTURE_2D, texId);
 		glTexImage2D(GL_TEXTURE_2D, 0, internalformat, size.width(), size.height(), 0, format, type, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	};
 
-	gBuffer_.reset();
-	gBuffer_ = std::make_unique<QOpenGLFramebufferObject>(size, QOpenGLFramebufferObject::Depth);
-	gBuffer_->addColorAttachment(size);
-	gBuffer_->addColorAttachment(size);
-	auto textures = gBuffer_->textures();
-	changeTexture(textures[0], GL_RGB16F, GL_RGB, GL_FLOAT);
-	changeTexture(textures[1], GL_RGB16F, GL_RGB, GL_FLOAT);
-	changeTexture(textures[2], GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	check(gBuffer_->isValid());
-	GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-	context()->extraFunctions()->glDrawBuffers(3, bufs);
+	if (gBuffer_ != 0)
+	{
+		glDeleteFramebuffers(1, &gBuffer_);
+		glDeleteTextures(1, &normalTexture_);
+		glDeleteTextures(1, &depthTexture_);
+	}
+	glGenFramebuffers(1, &gBuffer_);
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer_);
+	glGenTextures(1, &normalTexture_);
+	changeTexture(normalTexture_, GL_RGB16F, GL_RGB, GL_FLOAT);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, normalTexture_, 0);
+	glGenTextures(1, &depthTexture_);
+	changeTexture(depthTexture_, GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture_, 0);
+	GLenum gBufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	check(gBufferStatus == GL_FRAMEBUFFER_COMPLETE);
 
 	ssaoBuffer_.reset();
 	ssaoBuffer_ = std::make_unique<QOpenGLFramebufferObject>(size);
@@ -213,19 +226,18 @@ void Window::onRender()
 	const auto& camera = *camera_;
 	const auto& glContext = *context();
 
-	check(gBuffer_->bind());
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer_);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	model_->render(camera, glContext);
-	check(gBuffer_->bindDefault());
-	auto textures = gBuffer_->textures();
+	model_->render(camera, glContext, Model::GEOMETRY);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	std::optional<GLuint> ssaoTexture;
 	if (ssaoState_ != ssao_state::DISABLED)
 	{
 		check(ssaoBuffer_->bind());
 		glClear(GL_COLOR_BUFFER_BIT);
-		ssao_->render(camera, glContext, textures[0], textures[1]);
+		ssao_->render(camera, glContext, depthTexture_, normalTexture_);
 		check(ssaoBuffer_->bindDefault());
 
 		ssaoTexture = ssaoBuffer_->texture();
@@ -244,8 +256,8 @@ void Window::onRender()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	if (ssaoState_ != ssao_state::ONLY)
 	{
-		lighting_->render(camera, glContext,
-						textures[0], textures[1], textures[2], ssaoTexture);
+		lighting_->render(camera, glContext, ssaoTexture);
+		model_->render(camera, glContext, Model::TEXTURE);
 	} else {
 		QOpenGLFramebufferObject::blitFramebuffer(0, ssaoBuffer_.get());
 	}

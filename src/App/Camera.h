@@ -31,6 +31,9 @@ public:
 	float getYaw() const { return yaw_; }
 	float getPitch() const { return pitch_; }
 
+	float getFOV() const { return fov_; }
+	float getAspectRatio() const { return aspect_; }
+
 	void setMouseSensitivity(float sensitivity) { mouseSensitivity_ = sensitivity; }
 	void setMoveSpeed(float speed) { moveSpeed_ = speed; }
 
@@ -56,6 +59,9 @@ private:
 
 	float yaw_{-90.0f};
 	float pitch_{0.0f};
+
+	float fov_;
+	float aspect_;
 
 	float maxPitch_{89.0f};
 	float minPitch_{-89.0f};
