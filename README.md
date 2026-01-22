@@ -1,6 +1,6 @@
 ![build_cmake_status](https://github.com/niksn418/morphing-gl-qt/actions/workflows/build_cmake.yml/badge.svg)
 
-# Model Morphing and Phong Lighting in OpenGL with Qt
+# Model Morphing and Phong Lighting with SSAO in OpenGL with Qt
 
 Features:
 - Draws (possibly morphed) model and 3 light sources: Directional, Point and Spot lights;

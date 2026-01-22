@@ -54,33 +54,6 @@ SSAOSettings SSAO::defaultSettings()
     };
 }
 
-template <>
-UniformLocType<SSAOKernel> bindUniform<SSAOKernel>(
-                                    std::shared_ptr<QOpenGLShaderProgram> shaderProgram,
-									QString varName)
-{
-	UniformLocType<SSAOKernel> loc;
-	loc.sizeLoc = bindUniform<unsigned int>(shaderProgram, varName + ".size");
-	for (unsigned int i = 0; i < MAX_SSAO_SAMPLES; ++i)
-	{
-		loc.locs[i] = bindUniform<QVector3D>(shaderProgram,
-                                             varName + ".samples[" + QString::number(i) + "]");
-	}
-	return loc;
-}
-
-template <>
-void setUniformValue<SSAOKernel>(std::shared_ptr<QOpenGLShaderProgram> shaderProgram,
-							     const UniformLocType<SSAOKernel> & locs,
-                                 const SSAOKernel & value)
-{
-    setUniformValue(shaderProgram, locs.sizeLoc, value.size);
-	for (unsigned int i = 0; i < value.size; ++i)
-	{
-        setUniformValue(shaderProgram, locs.locs[i], value.samples[i]);
-	}
-}
-
 SSAO::SSAO(std::shared_ptr<QOpenGLShaderProgram> program, const QOpenGLContext & context)
     : shaderProgram_(program)
     , noise_(createNoiseTexture(context))

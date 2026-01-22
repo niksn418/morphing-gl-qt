@@ -20,14 +20,33 @@ struct UniformLocType<SSAOKernel> {
 	std::array<UniformLocType<QVector3D>, MAX_SSAO_SAMPLES> locs;
 	UniformLocType<unsigned int> sizeLoc;
 };
+
 template <>
 UniformLocType<SSAOKernel> bindUniform<SSAOKernel>(
                                     std::shared_ptr<QOpenGLShaderProgram> shaderProgram,
-									QString varName);
+									QString varName)
+{
+	UniformLocType<SSAOKernel> loc;
+	loc.sizeLoc = bindUniform<unsigned int>(shaderProgram, varName + ".size");
+	for (unsigned int i = 0; i < MAX_SSAO_SAMPLES; ++i)
+	{
+		loc.locs[i] = bindUniform<QVector3D>(shaderProgram,
+                                             varName + ".samples[" + QString::number(i) + "]");
+	}
+	return loc;
+}
+
 template <>
 void setUniformValue<SSAOKernel>(std::shared_ptr<QOpenGLShaderProgram> shaderProgram,
 							     const UniformLocType<SSAOKernel> & locs,
-                                 const SSAOKernel & value);
+                                 const SSAOKernel & value)
+{
+    setUniformValue(shaderProgram, locs.sizeLoc, value.size);
+	for (unsigned int i = 0; i < value.size; ++i)
+	{
+        setUniformValue(shaderProgram, locs.locs[i], value.samples[i]);
+	}
+}
 
 #define SSAO_SETTINGS_FIELDS(FIELD) \
     FIELD(bool, hemisphere)         \
